@@ -37,7 +37,7 @@ const Login = () => {
                 });
                 (window as any).google.accounts.id.renderButton(
                     document.getElementById("googleBtn"),
-                    { theme: "filled_black", size: "large", text: "continue_with", shape: "rectangular", width: "350" }
+                    { theme: "filled_black", size: "large", text: "continue_with", shape: "rectangular", width: window.innerWidth < 400 ? 280 : 350 }
                 );
             }
         };
