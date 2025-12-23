@@ -1,0 +1,190 @@
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 85%;
+
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 85%;
+
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 85%;
+
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 4%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 70%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 50%;
+
+    --accent: 45 90% 50%;
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 142 70% 45%;
+
+    --radius: 0px;
+
+    /* System-specific tokens */
+    --status-ok: 142 70% 45%;
+    --status-pending: 45 90% 50%;
+    --status-low: 0 70% 50%;
+    --status-high: 0 70% 50%;
+
+    --system-glow: 0 0 20px hsl(142 70% 45% / 0.3);
+    --system-border: 1px solid hsl(0 0% 20%);
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 85%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 85%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 85%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 70%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 45 90% 50%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 142 70% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-mono antialiased;
+    font-feature-settings: "liga" 0;
+  }
+
+  html {
+    font-family: "JetBrains Mono", monospace;
+  }
+}
+
+@layer utilities {
+  .status-ok {
+    @apply text-primary drop-shadow-[0_0_8px_#4ade8080];
+  }
+
+  .status-pending {
+    @apply text-accent drop-shadow-[0_0_8px_#facc1580];
+  }
+
+  .status-low {
+    @apply text-destructive drop-shadow-[0_0_8px_#f8717180];
+  }
+
+  .status-high {
+    @apply text-destructive drop-shadow-[0_0_10px_#f8717199];
+  }
+
+  .system-text {
+    @apply uppercase tracking-[0.2em] text-[10px] font-bold text-muted-foreground/80;
+  }
+
+  .system-border {
+    border: 1px solid hsl(0 0% 20%);
+  }
+
+  .system-glow {
+    box-shadow: 0 0 30px hsl(142 70% 45% / 0.1);
+  }
+
+  .scanline {
+    background: linear-gradient(180deg,
+        rgba(0, 0, 0, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(0, 255, 0, 0.01),
+        rgba(0, 0, 255, 0.03));
+    background-size: 100% 3px, 6px 100%;
+    position: relative;
+  }
+
+  .scanline::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(to bottom,
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.1) 50%);
+    background-size: 100% 4px;
+    z-index: 2;
+    pointer-events: none;
+  }
+}
+
+@layer components {
+  .system-card {
+    @apply bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-lg shadow-2xl relative overflow-hidden transition-all duration-300;
+  }
+
+  .system-card:hover {
+    @apply border-white/20 bg-black/50 shadow-[0_0_30px_#00000080];
+  }
+
+  .system-button {
+    @apply bg-white/5 border border-white/10 px-6 py-3 uppercase tracking-widest text-[10px] font-bold text-foreground transition-all duration-300 rounded-sm relative overflow-hidden;
+  }
+
+  .system-button:hover:not(:disabled) {
+    @apply bg-white/10 border-primary/50 text-primary shadow-[0_0_15px_#4ade8033] scale-[1.02];
+  }
+
+  .system-button:disabled {
+    @apply opacity-50 cursor-not-allowed grayscale;
+  }
+
+  .system-button-primary {
+    @apply bg-primary text-black border-primary font-bold shadow-[0_0_15px_#4ade8066];
+  }
+
+  .system-button-primary:hover {
+    @apply bg-primary/90 shadow-[0_0_25px_#4ade8099] scale-[1.02];
+  }
+
+  .system-indicator {
+    @apply w-2 h-2 rounded-full shadow-[0_0_8px_currentColor];
+  }
+
+  .system-indicator-active {
+    @apply bg-primary text-primary animate-pulse;
+  }
+
+  .system-indicator-pending {
+    @apply bg-accent text-accent;
+  }
+
+  .system-indicator-inactive {
+    @apply bg-muted-foreground text-muted-foreground;
+  }
+}
