@@ -115,7 +115,14 @@ const Index = () => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { notifyRecoveryMode, permission } = useNotifications();
+  const {
+    permission,
+    notifyRecoveryMode,
+    notifyCriticalCapacity,
+    notifyLowCapacity,
+    notifySurvivalMode,
+    notifyCheckInReminder
+  } = useNotifications();
 
   // Health data state
   const [healthData, setHealthData] = useState<Record<CategoryKey, HealthData>>({
@@ -276,6 +283,53 @@ const Index = () => {
     const interval = setInterval(checkCooldown, 60000);
     return () => clearInterval(interval);
   }, [warningsIgnored]);
+
+  // NOTIFICATION TRIGGERS
+
+  // Trigger notification when capacity drops critically
+  useEffect(() => {
+    if (permission !== 'granted' || !bioMetrics?.capacity) return;
+
+    const capacity = bioMetrics.capacity;
+    if (capacity < 30) {
+      notifyCriticalCapacity(capacity);
+    } else if (capacity < 60) {
+      notifyLowCapacity(capacity);
+    }
+  }, [bioMetrics?.capacity, permission, notifyCriticalCapacity, notifyLowCapacity]);
+
+  // Trigger notification when recovery lock triggers
+  useEffect(() => {
+    if (permission !== 'granted') return;
+    if (showRecoveryLock) {
+      notifyRecoveryMode();
+    }
+  }, [showRecoveryLock, permission, notifyRecoveryMode]);
+
+  // Trigger notification for survival mode
+  useEffect(() => {
+    if (permission !== 'granted' || !bioMetrics?.systemMode) return;
+
+    if (bioMetrics.systemMode === 'SURVIVAL' || bioMetrics.systemMode === 'LOCKED_RECOVERY') {
+      notifySurvivalMode();
+    }
+  }, [bioMetrics?.systemMode, permission, notifySurvivalMode]);
+
+  // Check-in reminder (only on page load if not checked in)
+  useEffect(() => {
+    if (permission !== 'granted') return;
+
+    // Only remind once per session
+    const reminded = sessionStorage.getItem('checkin_reminded');
+    if (!todayCheckedIn && !reminded && dayCount > 1) {
+      // Delay reminder by 2 seconds to not be immediate
+      const timeout = setTimeout(() => {
+        notifyCheckInReminder();
+        sessionStorage.setItem('checkin_reminded', 'true');
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [todayCheckedIn, permission, dayCount, notifyCheckInReminder]);
 
   // Log a health category
   const handleLogCategory = useCallback((category: CategoryKey, value: string, status: string) => {

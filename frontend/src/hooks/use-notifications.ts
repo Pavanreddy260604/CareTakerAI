@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 
 type NotificationPermission = "default" | "granted" | "denied";
 
@@ -7,11 +7,13 @@ interface NotificationOptions {
   body: string;
   tag?: string;
   requireInteraction?: boolean;
+  icon?: string;
 }
 
 export const useNotifications = () => {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [supported, setSupported] = useState(false);
+  const lastNotificationRef = useRef<{ tag: string; time: number } | null>(null);
 
   useEffect(() => {
     if ("Notification" in window) {
@@ -22,7 +24,7 @@ export const useNotifications = () => {
 
   const requestPermission = useCallback(async () => {
     if (!supported) return false;
-    
+
     const result = await Notification.requestPermission();
     setPermission(result);
     return result === "granted";
@@ -32,46 +34,97 @@ export const useNotifications = () => {
     (options: NotificationOptions) => {
       if (!supported || permission !== "granted") return null;
 
+      // Debounce: prevent same tag within 30 seconds
+      const now = Date.now();
+      if (
+        lastNotificationRef.current &&
+        lastNotificationRef.current.tag === options.tag &&
+        now - lastNotificationRef.current.time < 30000
+      ) {
+        return null;
+      }
+
+      lastNotificationRef.current = { tag: options.tag || "default", time: now };
+
       const notification = new Notification(options.title, {
         body: options.body,
         tag: options.tag,
         requireInteraction: options.requireInteraction ?? false,
-        icon: "/favicon.ico",
+        icon: options.icon || "/favicon.ico",
       });
+
+      // Auto-close non-interactive after 5 seconds
+      if (!options.requireInteraction) {
+        setTimeout(() => notification.close(), 5000);
+      }
 
       return notification;
     },
     [supported, permission]
   );
 
-  const notifyPendingAction = useCallback(
-    (action: string) => {
+  // Critical capacity alert
+  const notifyCriticalCapacity = useCallback(
+    (capacity: number) => {
       return sendNotification({
-        title: "CARETAKER AI",
-        body: `Action required: ${action}`,
-        tag: "pending-action",
+        title: "⚠️ CRITICAL CAPACITY",
+        body: `Your cognitive capacity is at ${capacity}%. Rest required immediately.`,
+        tag: "critical-capacity",
         requireInteraction: true,
       });
     },
     [sendNotification]
   );
 
-  const notifyStatusAlert = useCallback(
-    (label: string, status: string) => {
+  // Low capacity warning
+  const notifyLowCapacity = useCallback(
+    (capacity: number) => {
       return sendNotification({
-        title: "CARETAKER AI",
-        body: `${label}: ${status}`,
-        tag: `status-${label.toLowerCase()}`,
+        title: "⚡ Low Capacity Warning",
+        body: `Capacity at ${capacity}%. Consider taking a break.`,
+        tag: "low-capacity",
       });
     },
     [sendNotification]
   );
 
+  // Recovery mode notification
   const notifyRecoveryMode = useCallback(() => {
     return sendNotification({
-      title: "CARETAKER AI",
-      body: "Load exceeded. Recovery enforced.",
+      title: "🛡️ RECOVERY MODE ACTIVE",
+      body: "Load exceeded. Recovery protocols engaged. Rest is mandatory.",
       tag: "recovery-mode",
+      requireInteraction: true,
+    });
+  }, [sendNotification]);
+
+  // Check-in reminder
+  const notifyCheckInReminder = useCallback(() => {
+    return sendNotification({
+      title: "📋 Daily Check-in Reminder",
+      body: "You haven't checked in today. Log your status to track your health.",
+      tag: "checkin-reminder",
+    });
+  }, [sendNotification]);
+
+  // Status update notification
+  const notifyStatusUpdate = useCallback(
+    (status: string, message: string) => {
+      return sendNotification({
+        title: `Status: ${status}`,
+        body: message,
+        tag: `status-${status.toLowerCase()}`,
+      });
+    },
+    [sendNotification]
+  );
+
+  // Survival mode warning
+  const notifySurvivalMode = useCallback(() => {
+    return sendNotification({
+      title: "🚨 SURVIVAL MODE",
+      body: "CRITICAL: Biological debt exceeds safety limits. Immediate action required.",
+      tag: "survival-mode",
       requireInteraction: true,
     });
   }, [sendNotification]);
@@ -81,8 +134,11 @@ export const useNotifications = () => {
     permission,
     requestPermission,
     sendNotification,
-    notifyPendingAction,
-    notifyStatusAlert,
+    notifyCriticalCapacity,
+    notifyLowCapacity,
     notifyRecoveryMode,
+    notifyCheckInReminder,
+    notifyStatusUpdate,
+    notifySurvivalMode,
   };
 };
