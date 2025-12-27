@@ -7,20 +7,19 @@ interface SystemHeaderProps {
   onSettingsClick?: () => void;
 }
 
-const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", integrity, onSettingsClick }: SystemHeaderProps) => {
+const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", onSettingsClick }: SystemHeaderProps) => {
   return (
-    <header className="border-b border-border pb-6 mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="system-indicator system-indicator-active" />
-          <h1 className="text-xl font-medium tracking-tight">
-            CARETAKER AI
-          </h1>
-        </div>
+    <header className="flex-1 min-w-0">
+      {/* Title Row */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="system-indicator system-indicator-active shrink-0" />
+        <h1 className="text-lg sm:text-xl font-medium tracking-tight truncate">
+          CARETAKER AI
+        </h1>
         {onSettingsClick && (
           <button
             onClick={onSettingsClick}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-full transition-colors"
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg transition-colors shrink-0 ml-auto"
             title="System Configuration"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -31,29 +30,39 @@ const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", int
         )}
       </div>
 
-      <div className="space-y-1">
+      {/* User greeting and status */}
+      <div className="space-y-2">
         {userName && (
-          <p className="text-primary text-sm font-medium">
+          <p className="text-primary text-sm font-medium truncate">
             Welcome, {userName}
           </p>
         )}
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-xs sm:text-sm">
           System monitoring active.
         </p>
-        <div className="flex gap-4 text-sm">
+
+        {/* Stats Row */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm">
           <p className="text-muted-foreground">
             Day <span className="text-foreground font-medium">{dayCount}</span>
           </p>
           {streak > 0 && (
-            <p className="text-muted-foreground">
-              Continuity <span className="text-foreground font-mono">{streak}d</span>
+            <p className="text-muted-foreground flex items-center gap-1">
+              <span className="text-yellow-500">🔥</span>
+              <span className="text-foreground font-mono">{streak}d</span>
+              <span className="hidden sm:inline">streak</span>
             </p>
           )}
         </div>
+
+        {/* Recovery Mode Alert */}
         {isRecoveryMode && (
-          <p className="text-destructive text-sm mt-2">
-            RECOVERY MODE ACTIVE
-          </p>
+          <div className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-destructive/10 border border-destructive/30 rounded-lg">
+            <span className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
+            <span className="text-destructive text-xs sm:text-sm font-medium">
+              RECOVERY MODE
+            </span>
+          </div>
         )}
       </div>
     </header>

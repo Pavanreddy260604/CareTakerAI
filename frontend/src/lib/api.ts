@@ -1,6 +1,18 @@
 // API Configuration - Uses env var for production, defaults to localhost for dev
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+// Session expired event - custom event for handling token expiration
+const SESSION_EXPIRED_EVENT = 'session-expired';
+
+export const dispatchSessionExpired = () => {
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+};
+
+export const onSessionExpired = (callback: () => void) => {
+    window.addEventListener(SESSION_EXPIRED_EVENT, callback);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, callback);
+};
+
 // Token management
 export const getToken = (): string | null => {
     return localStorage.getItem('caretaker_token');
@@ -16,6 +28,47 @@ export const removeToken = (): void => {
 
 export const isAuthenticated = (): boolean => {
     return !!getToken();
+};
+
+// Handle API response - checks for 401 and handles token expiration
+const handleResponse = async (res: Response) => {
+    if (res.status === 401) {
+        // Token expired or invalid
+        removeToken();
+        // Set session expired flag in sessionStorage
+        sessionStorage.setItem('session_expired', 'true');
+        // Dispatch session expired event
+        dispatchSessionExpired();
+        // Redirect to login
+        window.location.href = '/login';
+        throw new Error('Session expired');
+    }
+
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.error || data.msg || 'Request failed');
+    }
+    return data;
+};
+
+// Authenticated fetch wrapper
+const authFetch = async (url: string, options: RequestInit = {}) => {
+    const token = getToken();
+    if (!token) {
+        sessionStorage.setItem('session_expired', 'true');
+        window.location.href = '/login';
+        throw new Error('Not authenticated');
+    }
+
+    const res = await fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            'Authorization': token,
+        },
+    });
+
+    return handleResponse(res);
 };
 
 // API calls
@@ -42,6 +95,8 @@ export const api = {
         const data = await res.json();
         if (!res.ok) throw new Error(data.msg || 'Login failed');
         setToken(data.token);
+        // Clear session expired flag on successful login
+        sessionStorage.removeItem('session_expired');
         return data;
     },
 
@@ -54,11 +109,14 @@ export const api = {
         const data = await res.json();
         if (!res.ok) throw new Error(data.msg || 'Google Login failed');
         setToken(data.token);
+        // Clear session expired flag on successful login
+        sessionStorage.removeItem('session_expired');
         return data;
     },
 
     logout() {
         removeToken();
+        sessionStorage.removeItem('session_expired');
     },
 
     // Health Check-in
@@ -69,15 +127,9 @@ export const api = {
         exercise: 'PENDING' | 'DONE';
         mentalLoad: 'LOW' | 'OK' | 'HIGH';
     }) {
-        const token = getToken();
-        if (!token) throw new Error('Not authenticated');
-
-        const res = await fetch(`${API_BASE_URL}/check-in`, {
+        return authFetch(`${API_BASE_URL}/check-in`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 health,
                 appOpened: true,
@@ -85,27 +137,13 @@ export const api = {
                 recoveryRequired: false,
             }),
         });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Check-in failed');
-        return data;
     },
 
     // Get User Stats (day count, streak, etc)
     async getUserStats() {
-        const token = getToken();
-        if (!token) throw new Error('Not authenticated');
-
-        const res = await fetch(`${API_BASE_URL}/user/stats`, {
+        return authFetch(`${API_BASE_URL}/user/stats`, {
             method: 'GET',
-            headers: {
-                'Authorization': token,
-            },
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to get stats');
-        return data as {
+        }) as Promise<{
             name: string;
             email: string;
             registrationDate: string;
@@ -115,95 +153,47 @@ export const api = {
             latestLog?: any;
             totalCheckIns: number;
             metrics?: any;
-        };
+        }>;
     },
 
     // Get Health History
     async getHealthHistory(limit = 7) {
-        const token = getToken();
-        if (!token) throw new Error('Not authenticated');
-
-        const res = await fetch(`${API_BASE_URL}/health/history?limit=${limit}`, {
+        return authFetch(`${API_BASE_URL}/health/history?limit=${limit}`, {
             method: 'GET',
-            headers: {
-                'Authorization': token,
-            },
         });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to get history');
-        return data;
     },
 
     // Update Settings
     async updateSettings(mode: 'CARETAKER' | 'OBSERVER') {
-        const token = getToken();
-        if (!token) throw new Error('Not authenticated');
-
-        const res = await fetch(`${API_BASE_URL}/user/settings`, {
+        return authFetch(`${API_BASE_URL}/user/settings`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mode }),
         });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to update settings');
-        return data;
     },
 
     // Engagement: Focus Card, Pattern Alerts, Recovery Score
     async getEngagement() {
-        const token = getToken();
-        if (!token) throw new Error('Not authenticated');
-
-        const res = await fetch(`${API_BASE_URL}/engagement`, {
-            headers: { 'Authorization': token },
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to get engagement');
-        return data as {
+        return authFetch(`${API_BASE_URL}/engagement`, {}) as Promise<{
             focus: { title: string; reason: string; action: string; priority: string };
             patterns: Array<{ type: string; day?: string; days?: number; frequency?: number }>;
             recoveryScore: { score: number; trend: string; message: string };
             historyLength: number;
-        };
+        }>;
     },
 
     // Weekly Reflection
     async submitReflection(reflection: { wentWell?: string; drained?: string; experiment?: string }) {
-        const token = getToken();
-        if (!token) throw new Error('Not authenticated');
-
-        const res = await fetch(`${API_BASE_URL}/reflection`, {
+        return authFetch(`${API_BASE_URL}/reflection`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reflection),
         });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to submit reflection');
-        return data;
     },
 
     // Analytics: Trends, Weekly Summary
     async getAnalytics() {
-        const token = getToken();
-        if (!token) throw new Error('Not authenticated');
-
-        const res = await fetch(`${API_BASE_URL}/analytics`, {
-            headers: { 'Authorization': token },
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to get analytics');
-        return data as {
+        return authFetch(`${API_BASE_URL}/analytics`, {}) as Promise<{
             trends: Array<{
                 date: string;
                 day: string;
@@ -231,6 +221,6 @@ export const api = {
                 };
                 insights?: Array<{ type: string; text: string }>;
             };
-        };
+        }>;
     },
 };
