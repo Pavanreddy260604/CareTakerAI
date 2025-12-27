@@ -802,20 +802,48 @@ const Index = () => {
         </footer>
       </div>
 
-      {/* Fixed Action Buttons - Mobile optimized */}
+      {/* Bottom Navigation Bar - Mobile only */}
+      <nav className="bottom-nav sm:hidden">
+        <div className="bottom-nav-inner">
+          <button
+            onClick={() => setShowAnalytics(true)}
+            className="bottom-nav-item"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span className="bottom-nav-label">Analytics</span>
+          </button>
+          <button
+            onClick={() => setShowWeeklyReview(!showWeeklyReview)}
+            className="bottom-nav-item"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="bottom-nav-label">Review</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Desktop Floating Action Buttons */}
       <div className="fab-container">
         <button
           onClick={() => setShowAnalytics(true)}
           className="fab-button bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border-cyan-500/50"
         >
-          <span>📊</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
           <span>Analytics</span>
         </button>
         <button
           onClick={() => setShowWeeklyReview(!showWeeklyReview)}
           className="fab-button bg-primary/20 hover:bg-primary/30 text-primary border-primary/50"
         >
-          <span>📅</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
           <span>Review</span>
         </button>
       </div>

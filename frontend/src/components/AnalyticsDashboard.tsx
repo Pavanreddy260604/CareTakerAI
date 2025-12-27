@@ -85,7 +85,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
     }
 
     return (
-        <div className="fixed inset-0 bg-black/98 z-50 overflow-auto safe-area-bottom">
+        <div className="fixed inset-0 bg-black z-50 overflow-auto safe-area-bottom">
             <div className="max-w-4xl mx-auto px-4 py-6 pb-20 sm:pb-6">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6 sticky top-0 bg-background py-2 -mx-4 px-4 z-10">

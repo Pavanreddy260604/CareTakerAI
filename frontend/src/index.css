@@ -300,7 +300,7 @@
 
   /* Improved modal styles */
   .modal-overlay {
-    @apply fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4;
+    @apply fixed inset-0 bg-black z-50 flex items-center justify-center p-4;
     overscroll-behavior: contain;
   }
 
@@ -351,20 +351,74 @@
     }
   }
 
-  /* Fixed action buttons container */
+  /* Instagram-style Bottom Navigation Bar */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 z-40;
+    @apply bg-[#0a0a0a] border-t border-white/10;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .bottom-nav-inner {
+    @apply flex items-stretch justify-around;
+    @apply max-w-lg mx-auto;
+  }
+
+  .bottom-nav-item {
+    @apply flex-1 flex flex-col items-center justify-center gap-1;
+    @apply py-2 px-2;
+    @apply text-muted-foreground;
+    @apply transition-all duration-200;
+    @apply relative;
+    min-height: 56px;
+  }
+
+  .bottom-nav-item:active {
+    @apply scale-90;
+  }
+
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  .bottom-nav-item.active::after {
+    content: '';
+    @apply absolute top-0 left-1/2 -translate-x-1/2;
+    @apply w-8 h-0.5 bg-primary rounded-full;
+  }
+
+  .bottom-nav-icon {
+    @apply text-xl leading-none;
+  }
+
+  .bottom-nav-label {
+    @apply text-[10px] font-medium tracking-wide;
+  }
+
+  /* Hide bottom nav on desktop, show fab buttons instead */
+  @media (min-width: 640px) {
+    .bottom-nav {
+      @apply hidden;
+    }
+  }
+
+  /* Desktop floating buttons */
   .fab-container {
-    @apply fixed bottom-0 left-0 right-0 p-4 sm:p-0 sm:bottom-4 sm:right-4 sm:left-auto flex gap-2 justify-center sm:justify-end z-40;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0.5rem) + 0.5rem);
+    @apply hidden;
   }
 
   @media (min-width: 640px) {
     .fab-container {
-      padding-bottom: 1rem;
+      @apply fixed bottom-4 right-4 flex gap-2 z-40;
     }
-  }
 
-  .fab-button {
-    @apply flex-1 sm:flex-none px-4 py-3 rounded-xl text-xs font-mono font-medium transition-all border min-h-[48px] flex items-center justify-center gap-2;
+    .fab-button {
+      @apply px-5 py-3 rounded-xl text-xs font-mono font-medium transition-all border min-h-[48px] flex items-center justify-center gap-2;
+      @apply bg-[#141414];
+    }
+
+    .fab-button:active {
+      @apply scale-95;
+    }
   }
 
   /* Status grid improvements */
