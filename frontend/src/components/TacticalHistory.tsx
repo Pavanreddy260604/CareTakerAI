@@ -22,8 +22,19 @@ const TacticalHistory = () => {
         const loadHistory = async () => {
             try {
                 const data = await api.getHealthHistory(7);
+                // Map mentalLoad -> mental for display
+                const mappedData = data.map((log: any) => ({
+                    ...log,
+                    health: {
+                        water: log.health?.water || 'NOT_SET',
+                        food: log.health?.food || 'NOT_SET',
+                        sleep: log.health?.sleep || 'NOT_SET',
+                        exercise: log.health?.exercise || 'NOT_SET',
+                        mental: log.health?.mentalLoad || log.health?.mental || 'NOT_SET',
+                    }
+                }));
                 // Ensure chronological order for display (oldest -> newest)
-                setLogs(data.reverse());
+                setLogs(mappedData.reverse());
             } catch (err) {
                 console.error(err);
             } finally {
