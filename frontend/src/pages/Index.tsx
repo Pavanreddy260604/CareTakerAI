@@ -515,7 +515,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background safe-area-bottom">
+    <div className="min-h-screen bg-background safe-area-bottom" data-mode={operatingMode}>
       <PresenceNotification show={showPresence} onDismiss={handleDismissPresence} />
 
       {/* Cooldown Banner */}

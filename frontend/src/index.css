@@ -77,6 +77,14 @@
     --input: 0 0% 12%;
     --ring: 142 70% 45%;
   }
+
+  /* Observer Mode Theme (Blue) */
+  [data-mode="OBSERVER"] {
+    --primary: 217 91% 60%;
+    --status-ok: 217 91% 60%;
+    --ring: 217 91% 60%;
+    --system-glow: 0 0 20px hsl(217 91% 60% / 0.3);
+  }
 }
 
 @layer base {
