@@ -233,9 +233,12 @@ async function queryMemory(query, userId, limit = 3) {
 
         if (response.results && response.results.length > 0) {
             console.log(`Supermemory: Found ${response.results.length} memories`);
-            return response.results.map(r => {
-                const text = r.content || r.chunk?.content || r.document?.content;
-                return text || `[Memory Record] ${JSON.stringify(r).substring(0, 100)}...`;
+            return response.results.map((r, i) => {
+                let text = r.content || r.chunk?.content || r.document?.content;
+                if (!text || typeof text !== 'string' || text.trim().length === 0) {
+                    text = `[Debug ${i}] Raw: ${JSON.stringify(r).substring(0, 50)}`;
+                }
+                return text;
             });
         }
         return [];
