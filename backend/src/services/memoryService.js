@@ -131,7 +131,7 @@ async function recallSimilarState(userId, currentState) {
         if (response.results && response.results.length > 0) {
             console.log(`Supermemory Search: Found ${response.results.length} memories`);
             return response.results.map(r => {
-                const content = r.content || r.chunk?.content || '';
+                const content = r.content || r.chunk?.content || r.document?.content || JSON.stringify(r);
                 return { content, score: r.score || 0 };
             });
         }
@@ -233,7 +233,10 @@ async function queryMemory(query, userId, limit = 3) {
 
         if (response.results && response.results.length > 0) {
             console.log(`Supermemory: Found ${response.results.length} memories`);
-            return response.results.map(r => r.content || r.chunk?.content || '');
+            return response.results.map(r => {
+                const text = r.content || r.chunk?.content || r.document?.content;
+                return text || `[Memory Record] ${JSON.stringify(r).substring(0, 100)}...`;
+            });
         }
         return [];
     } catch (error) {
