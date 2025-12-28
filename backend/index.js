@@ -13,6 +13,7 @@ const connectDB = require('./src/config/db');
 // Models
 const User = require('./src/models/User');
 const HealthLog = require('./src/models/HealthLog');
+const FocusSession = require('./src/models/FocusSession');
 
 // Services
 const { isRecoveryRequired, getHighestPriorityAction, getContinuityState, calculateBiologicalMetrics, generateDecision } = require('./src/services/rulesService');
@@ -758,6 +759,77 @@ app.get('/api/streak', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Streak Error:', error);
         res.status(500).json({ error: 'Failed to get streak' });
+    }
+});
+
+// API Endpoint: Save Focus Session (PROTECTED)
+app.post('/api/focus', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { duration } = req.body; // seconds
+
+        if (!duration || duration < 60) {
+            return res.status(400).json({ error: 'Invalid duration' });
+        }
+
+        const session = new FocusSession({
+            userId,
+            duration,
+            completedAt: new Date()
+        });
+
+        await session.save();
+
+        // Return today's stats for immediate UI update
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const sessions = await FocusSession.find({
+            userId,
+            completedAt: { $gte: today }
+        });
+
+        const totalMinutes = Math.round(sessions.reduce((acc, s) => acc + s.duration, 0) / 60);
+
+        res.json({
+            success: true,
+            todayStats: {
+                sessions: sessions.length,
+                totalMinutes
+            }
+        });
+    } catch (error) {
+        console.error('Save Focus Session Error:', error);
+        res.status(500).json({ error: 'Failed to save session' });
+    }
+});
+
+// API Endpoint: Get Focus Stats (PROTECTED)
+app.get('/api/focus/stats', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Weekly Stats (Current Week)
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const weeklySessions = await FocusSession.find({
+            userId,
+            completedAt: { $gte: startOfWeek }
+        });
+
+        const totalSessions = weeklySessions.length;
+        const totalMinutes = Math.round(weeklySessions.reduce((acc, s) => acc + s.duration, 0) / 60);
+
+        res.json({
+            totalSessions,
+            totalMinutes
+        });
+    } catch (error) {
+        console.error('Get Focus Stats Error:', error);
+        res.status(500).json({ error: 'Failed to get stats' });
     }
 });
 

@@ -480,4 +480,25 @@ export const api = {
     }> {
         return authFetch(`${API_BASE_URL}/streak`, {});
     },
+
+    // Focus Timer
+    async saveFocusSession(duration: number): Promise<{
+        success: boolean;
+        todayStats?: {
+            sessions: number;
+            totalMinutes: number;
+        }
+    }> {
+        return authFetch(`${API_BASE_URL}/focus`, {
+            method: 'POST',
+            body: JSON.stringify({ duration }),
+        });
+    },
+
+    async getFocusStats(): Promise<{
+        totalSessions: number;
+        totalMinutes: number;
+    }> {
+        return authFetch(`${API_BASE_URL}/focus/stats`, {});
+    },
 };
