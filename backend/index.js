@@ -351,6 +351,108 @@ If nothing health-related was mentioned, respond with: {}`;
     }
 });
 
+// API Endpoint: Save Focus Session (PROTECTED)
+app.post('/api/focus-session', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { duration } = req.body;
+
+        if (!duration || typeof duration !== 'number' || duration < 60) {
+            return res.status(400).json({ error: 'Valid duration required (min 60 seconds)' });
+        }
+
+        // Get today's log
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let todayLog = await HealthLog.findOne({
+            userId,
+            date: { $gte: today }
+        });
+
+        if (!todayLog) {
+            // Create a new log for today if doesn't exist
+            todayLog = new HealthLog({
+                userId,
+                date: new Date(),
+                health: {},
+                focusSessions: []
+            });
+        }
+
+        // Add focus session
+        if (!todayLog.focusSessions) {
+            todayLog.focusSessions = [];
+        }
+
+        todayLog.focusSessions.push({
+            duration,
+            completedAt: new Date()
+        });
+
+        // Calculate total focus time for today
+        const totalFocusMinutes = todayLog.focusSessions.reduce((sum, s) => sum + (s.duration / 60), 0);
+
+        await todayLog.save();
+
+        res.json({
+            success: true,
+            message: 'Focus session saved',
+            todayStats: {
+                sessions: todayLog.focusSessions.length,
+                totalMinutes: Math.round(totalFocusMinutes)
+            }
+        });
+    } catch (error) {
+        console.error('Focus Session Error:', error);
+        res.status(500).json({ error: 'Failed to save focus session' });
+    }
+});
+
+// API Endpoint: Get Focus Stats (PROTECTED)
+app.get('/api/focus-stats', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Get last 7 days of focus sessions
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
+
+        const logs = await HealthLog.find({
+            userId,
+            date: { $gte: weekAgo },
+            focusSessions: { $exists: true, $ne: [] }
+        }).sort({ date: -1 });
+
+        const weeklyStats = {
+            totalSessions: 0,
+            totalMinutes: 0,
+            dailyBreakdown: []
+        };
+
+        logs.forEach(log => {
+            if (log.focusSessions && log.focusSessions.length > 0) {
+                const dayMinutes = log.focusSessions.reduce((sum, s) => sum + (s.duration / 60), 0);
+                weeklyStats.totalSessions += log.focusSessions.length;
+                weeklyStats.totalMinutes += dayMinutes;
+                weeklyStats.dailyBreakdown.push({
+                    date: log.date,
+                    sessions: log.focusSessions.length,
+                    minutes: Math.round(dayMinutes)
+                });
+            }
+        });
+
+        weeklyStats.totalMinutes = Math.round(weeklyStats.totalMinutes);
+
+        res.json(weeklyStats);
+    } catch (error) {
+        console.error('Focus Stats Error:', error);
+        res.status(500).json({ error: 'Failed to get focus stats' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Caretaker AI Server running on port ${PORT}`);
 });

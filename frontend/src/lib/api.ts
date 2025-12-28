@@ -251,4 +251,32 @@ export const api = {
             body: JSON.stringify({ text }),
         });
     },
+
+    // Focus: Save a focus session to database
+    async saveFocusSession(duration: number): Promise<{
+        success: boolean;
+        message: string;
+        todayStats: {
+            sessions: number;
+            totalMinutes: number;
+        };
+    }> {
+        return authFetch(`${API_BASE_URL}/focus-session`, {
+            method: 'POST',
+            body: JSON.stringify({ duration }),
+        });
+    },
+
+    // Focus: Get weekly focus stats
+    async getFocusStats(): Promise<{
+        totalSessions: number;
+        totalMinutes: number;
+        dailyBreakdown: Array<{
+            date: string;
+            sessions: number;
+            minutes: number;
+        }>;
+    }> {
+        return authFetch(`${API_BASE_URL}/focus-stats`, {});
+    },
 };

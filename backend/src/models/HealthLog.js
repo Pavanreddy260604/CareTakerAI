@@ -25,7 +25,12 @@ const HealthLogSchema = new mongoose.Schema({
     streakDay: {
         type: Number,
         default: 1
-    }
+    },
+    // Focus Timer sessions
+    focusSessions: [{
+        duration: { type: Number, required: true }, // in seconds
+        completedAt: { type: Date, default: Date.now }
+    }]
 });
 
 // Index for efficient queries by user and date
