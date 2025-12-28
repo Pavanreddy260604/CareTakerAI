@@ -1075,14 +1075,19 @@ const Index = () => {
             onClick={() => setShowAchievements(true)}
             className="bottom-nav-item"
           >
-            <span className="text-lg">🏅</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15l-2 5l-2.5-1.5L5 21V11a7 7 0 1114 0v10l-2.5-2.5L14 20l-2-5z" />
+              <circle cx="12" cy="8" r="4" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} />
+            </svg>
             <span className="bottom-nav-label">Badges</span>
           </button>
           <button
             onClick={() => setShowGoalSettings(true)}
             className="bottom-nav-item"
           >
-            <span className="text-lg">🎯</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a6 6 0 100 12 6 6 0 000-12zm0 4a2 2 0 100 4 2 2 0 000-4z" />
+            </svg>
             <span className="bottom-nav-label">Goals</span>
           </button>
           <button
@@ -1098,7 +1103,9 @@ const Index = () => {
             onClick={() => setShowFocusTimer(true)}
             className="bottom-nav-item"
           >
-            <span className="text-lg">🧘</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
             <span className="bottom-nav-label">Focus</span>
           </button>
         </div>
