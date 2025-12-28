@@ -59,48 +59,42 @@ export const BiologicalStatus: React.FC<Props> = ({ metrics }) => {
                 </div>
             )}
 
-            {/* Two Separate Metrics: Capacity & Confidence */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 relative z-10">
-                {/* Cognitive Capacity Card */}
-                <div className="bg-black/30 border border-primary/20 rounded-xl p-4">
-                    <div className="flex justify-between items-end mb-3">
-                        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                            Cognitive Capacity
-                        </span>
-                        <span className={`text-2xl sm:text-3xl font-mono font-bold ${capacityColor}`}>
-                            {capacity}%
-                        </span>
-                    </div>
-                    <div className="progress-bar">
-                        <div
-                            className={`progress-bar-fill ${capacityBg}`}
-                            style={{ width: `${capacity}%` }}
-                        />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground/60 mt-2 font-mono">
-                        {capacity < 30 ? "⚠ CRITICAL" : capacity < 60 ? "⚡ DEGRADED" : "✓ OPTIMAL"}
-                    </p>
-                </div>
-
-                {/* Confidence Card */}
-                <div className="bg-black/30 border border-border/30 rounded-xl p-4">
-                    <div className="flex justify-between items-end mb-3">
-                        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+            {/* Compact Metrics Row: Confidence & Capacity */}
+            <div className="flex flex-wrap gap-3 mb-4 relative z-10">
+                {/* Data Confidence */}
+                <div className="flex-1 min-w-[140px] bg-black/20 border border-border/20 rounded-xl p-3 flex items-center gap-3">
+                    <div className="flex-1">
+                        <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider block mb-1">
                             Data Confidence
                         </span>
-                        <span className={`text-2xl sm:text-3xl font-mono font-bold ${(metrics.confidence || 1) < 0.8 ? "text-yellow-500" : "text-primary"}`}>
-                            {Math.round((metrics.confidence || 1) * 100)}%
+                        <div className="h-1.5 bg-muted/20 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all ${(metrics.confidence || 1) < 0.8 ? "bg-yellow-500" : "bg-primary"}`}
+                                style={{ width: `${Math.round((metrics.confidence || 1) * 100)}%` }}
+                            />
+                        </div>
+                    </div>
+                    <span className={`text-lg font-mono font-bold ${(metrics.confidence || 1) < 0.8 ? "text-yellow-500" : "text-primary"}`}>
+                        {Math.round((metrics.confidence || 1) * 100)}%
+                    </span>
+                </div>
+
+                {/* Cognitive Capacity */}
+                <div className="flex-1 min-w-[140px] bg-black/20 border border-primary/20 rounded-xl p-3 flex items-center gap-3">
+                    <div className="flex-1">
+                        <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider block mb-1">
+                            Cognitive Capacity
                         </span>
+                        <div className="h-1.5 bg-muted/20 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all ${capacityBg}`}
+                                style={{ width: `${capacity}%` }}
+                            />
+                        </div>
                     </div>
-                    <div className="progress-bar">
-                        <div
-                            className={`progress-bar-fill ${(metrics.confidence || 1) < 0.8 ? "bg-yellow-500" : "bg-primary"}`}
-                            style={{ width: `${Math.round((metrics.confidence || 1) * 100)}%` }}
-                        />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground/60 mt-2 font-mono">
-                        {(metrics.confidence || 1) < 0.6 ? "⚠ LOW DATA" : (metrics.confidence || 1) < 0.8 ? "⚡ ESTIMATED" : "✓ VERIFIED"}
-                    </p>
+                    <span className={`text-lg font-mono font-bold ${capacityColor}`}>
+                        {capacity}%
+                    </span>
                 </div>
             </div>
 

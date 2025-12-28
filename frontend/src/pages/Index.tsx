@@ -15,7 +15,6 @@ import TacticalHistory from "@/components/TacticalHistory";
 import Achievements from "@/components/Achievements";
 import GoalSettings from "@/components/GoalSettings";
 import DataExport from "@/components/DataExport";
-import NotificationControl from "@/components/NotificationControl";
 import RecoveryMode from "@/components/RecoveryMode";
 import { VoiceLogger } from "@/components/VoiceLogger";
 
@@ -95,13 +94,14 @@ const Index = () => {
 
         // Restore check-ins from latest log
         if (stats.latestLog?.health) {
-          const restored: any = { ...healthData };
-          Object.keys(TASK_CATEGORIES).forEach((key) => {
-            const k = key as CategoryKey;
-            if (stats.latestLog.health[k]) {
-              restored[k] = { ...restored[k], status: 'OK', logged: true, value: 'Logged' };
-            }
-          });
+          const h = stats.latestLog.health;
+          const restored: Record<CategoryKey, HealthData> = {
+            water: { category: 'water', value: 'Logged', status: h.water ? 'OK' : 'NOT_SET', logged: !!h.water },
+            food: { category: 'food', value: 'Logged', status: h.food ? 'OK' : 'NOT_SET', logged: !!h.food },
+            exercise: { category: 'exercise', value: 'Logged', status: h.exercise ? 'OK' : 'NOT_SET', logged: !!h.exercise },
+            sleep: { category: 'sleep', value: 'Logged', status: h.sleep ? 'OK' : 'NOT_SET', logged: !!h.sleep },
+            mental: { category: 'mental', value: 'Logged', status: h.mentalLoad ? 'OK' : 'NOT_SET', logged: !!h.mentalLoad },
+          };
           setHealthData(restored);
         }
 
@@ -162,7 +162,7 @@ const Index = () => {
         mentalLoad: healthData.mental.status !== 'NOT_SET' ? healthData.mental.status : undefined,
       };
 
-      const response = await api.checkIn(payload);
+      const response = await api.checkIn(payload as any);
       setAiResponse(response);
 
       if (response.metrics) setBioMetrics(response.metrics);
@@ -208,8 +208,7 @@ const Index = () => {
           onSettingsClick={() => setShowGoals(true)}
         />
 
-        {/* Notification Control (shows only when needed) */}
-        <NotificationControl />
+        {/* NotificationControl removed per user request */}
 
         {/* Biological Status Panel (RESTORED) */}
         {bioMetrics && (
