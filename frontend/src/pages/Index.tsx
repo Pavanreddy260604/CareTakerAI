@@ -17,6 +17,7 @@ import { WeatherWidget } from "@/components/WeatherWidget";
 import { FocusTimer } from "@/components/FocusTimer";
 import { DataExport } from "@/components/DataExport";
 import { Achievements } from "@/components/Achievements";
+import { GoalSettings } from "@/components/GoalSettings";
 
 // Task categories that map to health status
 const TASK_CATEGORIES = {
@@ -113,6 +114,7 @@ const Index = () => {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   // Phase 5: Achievements
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showGoalSettings, setShowGoalSettings] = useState(false);
 
   // Engagement state
   const [engagement, setEngagement] = useState<{
@@ -1046,16 +1048,30 @@ const Index = () => {
             onClick={() => setShowAnalytics(true)}
             className="bottom-nav-item"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            <span className="bottom-nav-label">Analytics</span>
+            <span className="bottom-nav-label">Stats</span>
+          </button>
+          <button
+            onClick={() => setShowAchievements(true)}
+            className="bottom-nav-item"
+          >
+            <span className="text-lg">🏅</span>
+            <span className="bottom-nav-label">Badges</span>
+          </button>
+          <button
+            onClick={() => setShowGoalSettings(true)}
+            className="bottom-nav-item"
+          >
+            <span className="text-lg">🎯</span>
+            <span className="bottom-nav-label">Goals</span>
           </button>
           <button
             onClick={() => setShowWeeklyReview(!showWeeklyReview)}
             className="bottom-nav-item"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span className="bottom-nav-label">Review</span>
@@ -1089,6 +1105,13 @@ const Index = () => {
         >
           <span className="text-lg">🏅</span>
           <span>Badges</span>
+        </button>
+        <button
+          onClick={() => setShowGoalSettings(true)}
+          className="fab-button bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/50"
+        >
+          <span className="text-lg">🎯</span>
+          <span>Goals</span>
         </button>
       </div>
 
@@ -1263,6 +1286,11 @@ const Index = () => {
       {/* Achievements Modal */}
       {showAchievements && (
         <Achievements onClose={() => setShowAchievements(false)} />
+      )}
+
+      {/* Goal Settings Modal */}
+      {showGoalSettings && (
+        <GoalSettings onClose={() => setShowGoalSettings(false)} />
       )}
     </div>
   );
