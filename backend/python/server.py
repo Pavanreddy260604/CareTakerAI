@@ -92,7 +92,7 @@ def inference():
             response = llm.create_chat_completion(
                 messages=[{"role": "user", "content": full_prompt}],
                 max_tokens=200,
-                temperature=0.2,
+                temperature=0.7,
                 stop=["```", "\n\n"]
             )
             
