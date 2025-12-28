@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
 
 interface VoiceLoggerProps {
     onHealthParsed: (health: {
@@ -98,8 +99,8 @@ export function VoiceLogger({ onHealthParsed, disabled }: VoiceLoggerProps) {
         };
     }, []);
 
-    // Parse natural language into health data
-    const parseHealthFromText = useCallback((text: string) => {
+    // Local fallback: Parse natural language into health data
+    const parseHealthFromTextLocal = useCallback((text: string) => {
         const lowerText = text.toLowerCase();
         const health: {
             water?: 'LOW' | 'OK';
@@ -139,7 +140,6 @@ export function VoiceLogger({ onHealthParsed, disabled }: VoiceLoggerProps) {
 
         // Sleep detection
         if (lowerText.includes('sleep') || lowerText.includes('slept') || lowerText.includes('hour') || lowerText.includes('rest') || lowerText.includes('tired')) {
-            // Extract hours if mentioned
             const hourMatch = lowerText.match(/(\d+)\s*(hour|hr)/);
             if (hourMatch) {
                 const hours = parseInt(hourMatch[1]);
@@ -196,7 +196,27 @@ export function VoiceLogger({ onHealthParsed, disabled }: VoiceLoggerProps) {
         setIsProcessing(true);
 
         try {
-            const health = parseHealthFromText(text);
+            let health: any = {};
+            let usedAI = false;
+
+            // Try backend AI parsing first
+            try {
+                console.log('Voice: Trying AI parsing for:', text);
+                const result = await api.parseVoiceText(text);
+                if (result.parsed && Object.keys(result.health).length > 0) {
+                    health = result.health;
+                    usedAI = true;
+                    console.log('Voice: AI parsed:', health);
+                }
+            } catch (e) {
+                console.log('Voice: AI parsing failed, using local fallback');
+            }
+
+            // Fallback to local parsing if AI didn't work
+            if (!usedAI || Object.keys(health).length === 0) {
+                health = parseHealthFromTextLocal(text);
+                console.log('Voice: Local parsed:', health);
+            }
 
             if (Object.keys(health).length === 0) {
                 toast({
@@ -207,7 +227,7 @@ export function VoiceLogger({ onHealthParsed, disabled }: VoiceLoggerProps) {
             } else {
                 const parsed = Object.entries(health).map(([k, v]) => `${k}: ${v}`).join(', ');
                 toast({
-                    title: '✅ Voice Log Parsed',
+                    title: usedAI ? '🤖 AI Parsed Voice Log' : '✅ Voice Log Parsed',
                     description: parsed
                 });
                 onHealthParsed(health);
@@ -216,7 +236,7 @@ export function VoiceLogger({ onHealthParsed, disabled }: VoiceLoggerProps) {
             setIsProcessing(false);
             setTranscript('');
         }
-    }, [parseHealthFromText, onHealthParsed, toast]);
+    }, [parseHealthFromTextLocal, onHealthParsed, toast]);
 
     const toggleListening = useCallback(() => {
         if (!recognitionRef.current) return;

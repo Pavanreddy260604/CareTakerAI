@@ -289,6 +289,68 @@ app.get('/api/analytics', authMiddleware, async (req, res) => {
     }
 });
 
+// API Endpoint: Parse Voice Text using AI (PROTECTED)
+app.post('/api/parse-voice', authMiddleware, async (req, res) => {
+    try {
+        const { text } = req.body;
+
+        if (!text || typeof text !== 'string') {
+            return res.status(400).json({ error: 'Text is required' });
+        }
+
+        // Use Gemini if available
+        const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ error: 'AI not configured' });
+        }
+
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        const prompt = `You are a health data extraction assistant. Parse the following natural language text and extract health status information.
+
+User said: "${text}"
+
+Extract the following fields if mentioned (use EXACTLY these values):
+- water: "LOW" (dehydrated, little/no water) or "OK" (hydrated, drank water)
+- food: "LOW" (skipped meals, hungry) or "OK" (ate properly)  
+- sleep: "LOW" (bad sleep, less than 6 hours, tired) or "OK" (slept well, 7+ hours)
+- exercise: "PENDING" (no exercise, skipped) or "DONE" (exercised, worked out)
+- mentalLoad: "LOW" (calm, relaxed), "OK" (moderate stress), or "HIGH" (stressed, anxious, overwhelmed)
+
+Respond ONLY with a JSON object containing only the fields that were clearly mentioned. Example:
+{"water": "OK", "sleep": "LOW"}
+
+If nothing health-related was mentioned, respond with: {}`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const responseText = response.text().trim();
+
+        // Parse JSON from response
+        let healthData = {};
+        try {
+            // Extract JSON from response (might have markdown code blocks)
+            const jsonMatch = responseText.match(/\{[^}]*\}/);
+            if (jsonMatch) {
+                healthData = JSON.parse(jsonMatch[0]);
+            }
+        } catch (parseError) {
+            console.error('Failed to parse AI response:', responseText);
+        }
+
+        res.json({
+            success: true,
+            health: healthData,
+            parsed: Object.keys(healthData).length > 0
+        });
+    } catch (error) {
+        console.error('Voice Parse Error:', error);
+        res.status(500).json({ error: 'Failed to parse voice text' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Caretaker AI Server running on port ${PORT}`);
 });

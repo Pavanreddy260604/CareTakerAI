@@ -233,4 +233,22 @@ export const api = {
             };
         }>;
     },
+
+    // Voice: Parse natural language text to health data using AI
+    async parseVoiceText(text: string): Promise<{
+        success: boolean;
+        health: {
+            water?: 'LOW' | 'OK';
+            food?: 'LOW' | 'OK';
+            sleep?: 'LOW' | 'OK';
+            exercise?: 'PENDING' | 'DONE';
+            mentalLoad?: 'LOW' | 'OK' | 'HIGH';
+        };
+        parsed: boolean;
+    }> {
+        return authFetch(`${API_BASE_URL}/parse-voice`, {
+            method: 'POST',
+            body: JSON.stringify({ text }),
+        });
+    },
 };

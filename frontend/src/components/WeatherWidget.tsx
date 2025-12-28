@@ -109,10 +109,33 @@ export function WeatherWidget({ onWeatherUpdate, compact = false }: WeatherWidge
             }
         };
 
-        const getLocation = () => {
+        // Fallback: Get location from IP (no permission needed)
+        const getLocationFromIP = async () => {
+            try {
+                // Using ipapi.co (free tier, no key required)
+                const response = await fetch('https://ipapi.co/json/');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.latitude && data.longitude) {
+                        console.log('Weather: Using IP-based location:', data.city);
+                        fetchWeather(data.latitude, data.longitude);
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.error('IP location fallback failed:', e);
+            }
+            return false;
+        };
+
+        const getLocation = async () => {
             if (!navigator.geolocation) {
-                setError('Geolocation not supported');
-                setLoading(false);
+                // Try IP fallback
+                const success = await getLocationFromIP();
+                if (!success) {
+                    setError('Location not available');
+                    setLoading(false);
+                }
                 return;
             }
 
@@ -120,15 +143,24 @@ export function WeatherWidget({ onWeatherUpdate, compact = false }: WeatherWidge
                 (position) => {
                     fetchWeather(position.coords.latitude, position.coords.longitude);
                 },
-                (err) => {
+                async (err) => {
                     console.error('Geolocation error:', err);
                     if (err.code === err.PERMISSION_DENIED) {
                         setLocationDenied(true);
                     }
-                    setError('Location access denied');
-                    setLoading(false);
+                    // Try IP-based fallback
+                    console.log('Trying IP-based location fallback...');
+                    const success = await getLocationFromIP();
+                    if (!success) {
+                        setError('Location access denied');
+                        setLoading(false);
+                    }
                 },
-                { timeout: 10000, enableHighAccuracy: false }
+                {
+                    timeout: 15000,  // Increased timeout
+                    maximumAge: 300000,  // Cache for 5 minutes
+                    enableHighAccuracy: false
+                }
             );
         };
 
@@ -170,9 +202,9 @@ export function WeatherWidget({ onWeatherUpdate, compact = false }: WeatherWidge
 
     return (
         <div className={`p-4 border rounded-xl transition-all ${weather.isHot ? 'border-orange-500/30 bg-orange-500/5' :
-                weather.isCold ? 'border-blue-400/30 bg-blue-400/5' :
-                    weather.isRainy ? 'border-cyan-500/30 bg-cyan-500/5' :
-                        'border-muted/30 bg-black/20'
+            weather.isCold ? 'border-blue-400/30 bg-blue-400/5' :
+                weather.isRainy ? 'border-cyan-500/30 bg-cyan-500/5' :
+                    'border-muted/30 bg-black/20'
             }`}>
             <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -189,9 +221,9 @@ export function WeatherWidget({ onWeatherUpdate, compact = false }: WeatherWidge
 
             {/* Health-aware advice */}
             <div className={`text-xs font-mono p-2 rounded-lg ${weather.isHot ? 'bg-orange-500/10 text-orange-400' :
-                    weather.isCold ? 'bg-blue-400/10 text-blue-400' :
-                        weather.isRainy ? 'bg-cyan-500/10 text-cyan-400' :
-                            'bg-primary/10 text-primary'
+                weather.isCold ? 'bg-blue-400/10 text-blue-400' :
+                    weather.isRainy ? 'bg-cyan-500/10 text-cyan-400' :
+                        'bg-primary/10 text-primary'
                 }`}>
                 💡 {weather.advice}
             </div>
