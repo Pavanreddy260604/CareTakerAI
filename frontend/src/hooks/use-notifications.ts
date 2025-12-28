@@ -31,8 +31,8 @@ export const useNotifications = () => {
   }, [supported]);
 
   const sendNotification = useCallback(
-    (options: NotificationOptions) => {
-      if (!supported || permission !== "granted") return null;
+    async (options: NotificationOptions) => {
+      if (!supported || permission !== "granted") return;
 
       // Debounce: prevent same tag within 30 seconds
       const now = Date.now();
@@ -41,24 +41,54 @@ export const useNotifications = () => {
         lastNotificationRef.current.tag === options.tag &&
         now - lastNotificationRef.current.time < 30000
       ) {
-        return null;
+        return;
       }
 
       lastNotificationRef.current = { tag: options.tag || "default", time: now };
 
-      const notification = new Notification(options.title, {
-        body: options.body,
-        tag: options.tag,
-        requireInteraction: options.requireInteraction ?? false,
-        icon: options.icon || "/favicon.ico",
-      });
+      try {
+        // Method 1: Service Worker (Required for Mobile PWA / Android Chrome)
+        if ("serviceWorker" in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+          if (registration) {
+            await registration.showNotification(options.title, {
+              body: options.body,
+              tag: options.tag,
+              requireInteraction: options.requireInteraction ?? false,
+              icon: options.icon || "/favicon.ico",
+              badge: "/favicon.ico",
+            });
 
-      // Auto-close non-interactive after 5 seconds
-      if (!options.requireInteraction) {
-        setTimeout(() => notification.close(), 5000);
+            // Auto-close non-interactive after 5 seconds via SW
+            if (!options.requireInteraction) {
+              setTimeout(async () => {
+                try {
+                  const notifications = await registration.getNotifications({ tag: options.tag });
+                  notifications.forEach(n => n.close());
+                } catch (e) {
+                  // Ignore cleanup errors
+                }
+              }, 5000);
+            }
+            return;
+          }
+        }
+
+        // Method 2: Fallback to Desktop API
+        const notification = new Notification(options.title, {
+          body: options.body,
+          tag: options.tag,
+          requireInteraction: options.requireInteraction ?? false,
+          icon: options.icon || "/favicon.ico",
+        });
+
+        // Auto-close non-interactive after 5 seconds
+        if (!options.requireInteraction) {
+          setTimeout(() => notification.close(), 5000);
+        }
+      } catch (error) {
+        console.error("Notification failed:", error);
       }
-
-      return notification;
     },
     [supported, permission]
   );
