@@ -1,6 +1,7 @@
-@import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
-@import "@fontsource/jetbrains-mono/700.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource/outfit/400.css";
+@import "@fontsource/outfit/500.css";
+@import "@fontsource/outfit/700.css";
 
 @tailwind base;
 @tailwind components;
@@ -8,82 +9,53 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 85%;
+    /* BACKGROUND: Deep Void with subtle blue/purple undertone */
+    --background: 240 10% 4%;
+    --foreground: 210 20% 98%;
 
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 85%;
+    /* CARD: Glass surface */
+    --card: 240 10% 6%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 85%;
+    --popover: 240 10% 6%;
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 142 70% 45%;
-    --primary-foreground: 0 0% 4%;
+    /* PRIMARY: Calm Teal (Growth/Health) */
+    --primary: 170 70% 50%;
+    --primary-foreground: 240 10% 4%;
 
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 70%;
+    /* SECONDARY: Soft Slate */
+    --secondary: 240 5% 20%;
+    --secondary-foreground: 210 20% 90%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 50%;
+    /* MUTED: Subtle gray */
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 60%;
 
-    --accent: 45 90% 50%;
-    --accent-foreground: 0 0% 4%;
+    /* ACCENT: Glass Highlight */
+    --accent: 170 70% 50%;
+    --accent-foreground: 240 10% 4%;
 
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 98%;
+    /* DESTRUCTIVE: Soft Coral (Urgent Care - not punitive red) */
+    --destructive: 0 70% 65%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 12%;
-    --ring: 142 70% 45%;
+    /* WARNING: Soft Amber */
+    --warning: 35 90% 60%;
+    --warning-foreground: 30 100% 10%;
 
-    --radius: 0.75rem;
+    --border: 240 5% 15%;
+    --input: 240 5% 15%;
+    --ring: 170 70% 50%;
+    /* Primary ring */
 
-    /* System-specific tokens */
-    --status-ok: 142 70% 45%;
-    --status-pending: 45 90% 50%;
-    --status-low: 0 70% 50%;
-    --status-high: 0 70% 50%;
+    --radius: 1.5rem;
+    /* Softer, larger radius */
 
-    --system-glow: 0 0 20px hsl(142 70% 45% / 0.3);
-    --system-border: 1px solid hsl(0 0% 20%);
-
-    /* Spacing scale */
-    --space-xs: 0.25rem;
-    --space-sm: 0.5rem;
-    --space-md: 1rem;
-    --space-lg: 1.5rem;
-    --space-xl: 2rem;
-    --space-2xl: 3rem;
-  }
-
-  .dark {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 85%;
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 85%;
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 85%;
-    --primary: 142 70% 45%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 70%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 50%;
-    --accent: 45 90% 50%;
-    --accent-foreground: 0 0% 4%;
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 15%;
-    --input: 0 0% 12%;
-    --ring: 142 70% 45%;
-  }
-
-  /* Observer Mode Theme (Blue) */
-  [data-mode="OBSERVER"] {
-    --primary: 217 91% 60%;
-    --status-ok: 217 91% 60%;
-    --ring: 217 91% 60%;
-    --system-glow: 0 0 20px hsl(217 91% 60% / 0.3);
+    /* Custom Tokens */
+    --glass-border: 255 255 255 / 0.08;
+    --glass-surface: 255 255 255 / 0.03;
+    --glass-highlight: 255 255 255 / 0.05;
   }
 }
 
@@ -93,466 +65,146 @@
   }
 
   body {
-    @apply bg-background text-foreground font-mono antialiased;
-    font-feature-settings: "liga" 0;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/30;
+    /* Smooth gradient background */
+    background-image:
+      radial-gradient(circle at 50% 0%, hsl(240 20% 10% / 0.5), transparent 70%),
+      radial-gradient(circle at 100% 100%, hsl(170 50% 10% / 0.2), transparent 50%);
+    background-attachment: fixed;
+  }
+
+  /* Headings use Outfit for a friendly, modern feel */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display tracking-tight;
   }
 
   html {
-    font-family: "JetBrains Mono", monospace;
     scroll-behavior: smooth;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Better touch targets on mobile */
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    touch-action: manipulation;
   }
 }
 
 @layer utilities {
-  .status-ok {
-    @apply text-primary drop-shadow-[0_0_8px_#4ade8080];
-  }
 
-  .status-pending {
-    @apply text-accent drop-shadow-[0_0_8px_#facc1580];
-  }
-
-  .status-low {
-    @apply text-destructive drop-shadow-[0_0_8px_#f8717180];
-  }
-
-  .status-high {
-    @apply text-destructive drop-shadow-[0_0_10px_#f8717199];
-  }
-
-  .system-text {
-    @apply uppercase tracking-[0.15em] text-[11px] font-bold text-muted-foreground/80;
-  }
-
-  .system-border {
-    border: 1px solid hsl(0 0% 20%);
-  }
-
-  .system-glow {
-    box-shadow: 0 0 30px hsl(142 70% 45% / 0.1);
-  }
-
-  .scanline {
-    background: linear-gradient(180deg,
-        rgba(0, 0, 0, 0) 50%,
-        rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg,
-        rgba(255, 0, 0, 0.03),
-        rgba(0, 255, 0, 0.01),
-        rgba(0, 0, 255, 0.03));
-    background-size: 100% 3px, 6px 100%;
-    position: relative;
-  }
-
-  .scanline::before {
-    content: " ";
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    background: linear-gradient(to bottom,
-        rgba(18, 16, 16, 0) 50%,
-        rgba(0, 0, 0, 0.1) 50%);
-    background-size: 100% 4px;
-    z-index: 2;
-    pointer-events: none;
-  }
-
-  /* Safe area padding for mobile */
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 1rem);
-  }
-
-  .safe-area-top {
-    padding-top: env(safe-area-inset-top, 0);
-  }
-
-  /* Smooth scrolling container */
-  .scroll-container {
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary)) transparent;
-  }
-
-  .scroll-container::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-
-  .scroll-container::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scroll-container::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.3);
-    border-radius: 2px;
-  }
-
-  /* Text truncation */
-  .truncate-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* Glassmorphism effects */
+  /* Clean Glassmorphism */
   .glass {
-    @apply bg-black/40 backdrop-blur-xl;
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] shadow-xl;
   }
 
-  .glass-strong {
-    @apply bg-black/60 backdrop-blur-2xl;
+  .glass-card {
+    @apply glass rounded-3xl p-6 transition-all duration-500 hover:bg-white/[0.05] hover:border-white/[0.15] hover:shadow-2xl hover:-translate-y-1;
+  }
+
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-2xl border border-white/10;
+  }
+
+  /* Text Gradients */
+  .text-gradient-primary {
+    @apply bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-teal {
+    @apply bg-gradient-to-br from-primary to-emerald-400 bg-clip-text text-transparent;
+  }
+
+  /* Animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-breathe {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  /* Safe Areas */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 2rem);
   }
 }
 
 @layer components {
-  .system-card {
-    @apply bg-black/40 backdrop-blur-xl border border-white/10 p-4 sm:p-6 rounded-xl shadow-2xl relative overflow-hidden transition-all duration-300;
+
+  /* Modern Button Styles - "Squaryles" */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(45, 212, 191, 0.3)] hover:scale-[1.02] active:scale-[0.98];
   }
 
-  .system-card:hover {
-    @apply border-white/20 bg-black/50 shadow-[0_0_30px_#00000080];
+  .btn-glass {
+    @apply glass text-white font-medium px-6 py-3 rounded-2xl transition-all duration-300 hover:bg-white/10 active:scale-[0.98];
   }
 
-  .system-button {
-    @apply bg-white/5 border border-white/10 px-4 sm:px-6 py-3 uppercase tracking-widest text-[11px] font-bold text-foreground transition-all duration-300 rounded-lg relative overflow-hidden min-h-[48px] flex items-center justify-center;
+  .btn-ghost {
+    @apply text-muted-foreground hover:text-white px-4 py-2 rounded-xl transition-colors;
   }
 
-  .system-button:hover:not(:disabled) {
-    @apply bg-white/10 border-primary/50 text-primary shadow-[0_0_15px_#4ade8033] scale-[1.02];
+  /* Status Pills - Soft & Rounded */
+  .pill {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase backdrop-blur-md;
   }
 
-  .system-button:disabled {
-    @apply opacity-50 cursor-not-allowed grayscale;
+  .pill-ok {
+    @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/20;
   }
 
-  .system-button:active:not(:disabled) {
-    @apply scale-[0.98];
+  .pill-warning {
+    @apply bg-amber-500/20 text-amber-400 border border-amber-500/20;
   }
 
-  .system-button-primary {
-    @apply bg-primary text-black border-primary font-bold shadow-[0_0_15px_#4ade8066];
+  .pill-critical {
+    @apply bg-rose-500/20 text-rose-400 border border-rose-500/20;
   }
 
-  .system-button-primary:hover {
-    @apply bg-primary/90 shadow-[0_0_25px_#4ade8099] scale-[1.02];
+  /* Bento Grid */
+  .bento-grid {
+    @apply grid grid-cols-2 md:grid-cols-4 gap-4 p-4 max-w-7xl mx-auto safe-area-bottom pb-24;
   }
 
-  .system-indicator {
-    @apply w-2.5 h-2.5 rounded-full shadow-[0_0_8px_currentColor];
+  .bento-card {
+    @apply glass-card flex flex-col justify-between relative overflow-hidden;
   }
 
-  .system-indicator-active {
-    @apply bg-primary text-primary animate-pulse;
+  /* Helper classes for spans */
+  .col-span-2 {
+    grid-column: span 2;
   }
 
-  .system-indicator-pending {
-    @apply bg-accent text-accent;
+  .col-span-full {
+    grid-column: 1 / -1;
   }
 
-  .system-indicator-inactive {
-    @apply bg-muted-foreground text-muted-foreground;
-  }
-
-  /* Mobile-first card variations */
-  .info-card {
-    @apply p-4 sm:p-5 rounded-xl border transition-all duration-300;
-  }
-
-  .info-card-primary {
-    @apply info-card border-primary/30 bg-primary/5;
-  }
-
-  .info-card-warning {
-    @apply info-card border-yellow-500/30 bg-yellow-500/5;
-  }
-
-  .info-card-critical {
-    @apply info-card border-destructive bg-destructive/10;
-  }
-
-  .info-card-neutral {
-    @apply info-card border-muted/30 bg-black/20;
-  }
-
-  /* Status pill badges */
-  .status-pill {
-    @apply inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider;
-  }
-
-  .status-pill-ok {
-    @apply status-pill bg-primary/20 text-primary;
-  }
-
-  .status-pill-warning {
-    @apply status-pill bg-yellow-500/20 text-yellow-500;
-  }
-
-  .status-pill-critical {
-    @apply status-pill bg-destructive/20 text-destructive;
-  }
-
-  /* Improved modal styles */
-  .modal-overlay {
-    @apply fixed inset-0 bg-black z-50 flex items-center justify-center p-4;
-    overscroll-behavior: contain;
-  }
-
-  .modal-content {
-    @apply bg-[#0a0a0a] border border-border rounded-xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto scroll-container relative;
-    animation: modal-in 0.2s ease-out;
-  }
-
-  @keyframes modal-in {
-    from {
-      opacity: 0;
-      transform: scale(0.95) translateY(10px);
-    }
-
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  /* Form input styles */
-  .form-input {
-    @apply w-full bg-black/50 border border-muted/30 rounded-lg px-4 py-3 text-sm font-mono text-white placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all;
-  }
-
-  .form-label {
-    @apply block text-[11px] font-mono text-muted-foreground uppercase tracking-widest mb-2;
-  }
-
-  /* Progress bar improvements */
-  .progress-bar {
-    @apply w-full h-2 bg-background/50 rounded-full overflow-hidden;
-  }
-
-  .progress-bar-fill {
-    @apply h-full transition-all duration-1000 ease-out rounded-full;
-  }
-
-  /* Responsive grid utilities */
-  .metric-grid {
-    @apply grid gap-3;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  }
-
-  @media (min-width: 640px) {
-    .metric-grid {
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    }
-  }
-
-  /* Instagram-style Bottom Navigation Bar */
-  .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 z-40;
-    @apply bg-[#0a0a0a] border-t border-white/10;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-  }
-
-  .bottom-nav-inner {
-    @apply flex items-stretch justify-around;
-    @apply max-w-lg mx-auto;
-  }
-
-  .bottom-nav-item {
-    @apply flex-1 flex flex-col items-center justify-center gap-1;
-    @apply py-2 px-2;
-    @apply text-muted-foreground;
-    @apply transition-all duration-200;
-    @apply relative;
-    min-height: 56px;
-  }
-
-  .bottom-nav-item:active {
-    @apply scale-90;
-  }
-
-  .bottom-nav-item.active {
-    @apply text-primary;
-  }
-
-  .bottom-nav-item.active::after {
-    content: '';
-    @apply absolute top-0 left-1/2 -translate-x-1/2;
-    @apply w-8 h-0.5 bg-primary rounded-full;
-  }
-
-  .bottom-nav-icon {
-    @apply text-xl leading-none;
-  }
-
-  .bottom-nav-label {
-    @apply text-[10px] font-medium tracking-wide;
-  }
-
-  /* Hide bottom nav on desktop, show fab buttons instead */
-  @media (min-width: 640px) {
-    .bottom-nav {
-      @apply hidden;
-    }
-  }
-
-  /* Desktop floating buttons */
-  .fab-container {
-    @apply hidden;
-  }
-
-  @media (min-width: 640px) {
-    .fab-container {
-      @apply fixed bottom-4 right-4 flex gap-2 z-40;
-    }
-
-    .fab-button {
-      @apply px-5 py-3 rounded-xl text-xs font-mono font-medium transition-all border min-h-[48px] flex items-center justify-center gap-2;
-      @apply bg-[#141414];
-    }
-
-    .fab-button:active {
-      @apply scale-95;
-    }
-  }
-
-  /* Status grid improvements */
-  .status-grid {
-    @apply grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3;
-  }
-
-  .status-item {
-    @apply p-3 sm:p-4 text-center border rounded-xl transition-all duration-200 cursor-pointer min-h-[72px] flex flex-col items-center justify-center;
-  }
-
-  .status-item:active {
-    @apply scale-95;
-  }
-
-  .status-item-active {
-    @apply border-primary bg-primary/10 shadow-[0_0_12px_#4ade8040];
-  }
-
-  .status-item-logged {
-    @apply border-muted/50 bg-black/20;
-  }
-
-  .status-item-pending {
-    @apply border-muted/30 bg-transparent;
-  }
-
-  /* Option button for health check */
-  .option-button {
-    @apply w-full p-4 text-left border border-muted/30 rounded-xl transition-all duration-200 flex justify-between items-center gap-3 min-h-[56px];
-  }
-
-  .option-button:hover {
-    @apply border-primary bg-primary/5;
-  }
-
-  .option-button:active {
-    @apply scale-[0.98] bg-primary/10;
+  .row-span-2 {
+    grid-row: span 2;
   }
 }
 
-/* Additional animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
+/* Keyframes */
+@keyframes float {
 
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
+  0%,
+  100% {
     transform: translateY(0);
   }
-}
 
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-.animate-slide-up {
-  animation: slide-up 0.4s ease-out;
-}
-
-/* Mobile-specific improvements */
-@media (max-width: 640px) {
-  .system-card {
-    @apply rounded-lg;
-  }
-
-  .system-text {
-    @apply text-[10px] tracking-[0.1em];
+  50% {
+    transform: translateY(-10px);
   }
 }
 
-/* Large screen improvements */
-@media (min-width: 1024px) {
-  .system-card {
-    @apply p-8;
+@keyframes breathe {
+
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
   }
-}
-/* Mobile-First Bento Grid System */
-.bento-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  padding: 1rem;
-  padding-bottom: 6rem; /* Space for bottom nav */
-}
 
-@media (min-width: 640px) {
-  .bento-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
+  50% {
+    opacity: 0.4;
+    transform: scale(0.95);
   }
-}
-
-/* Base Card Style for Bento Items */
-.bento-card {
-  @apply relative overflow-hidden rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl transition-all duration-300;
-  /* Subtle inner glow */
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
-.bento-card:hover {
-  @apply border-white/10 bg-black/50;
-  transform: translateY(-2px);
-}
-
-/* Grid Spans */
-.col-span-2 { grid-column: span 2; }
-.col-span-full { grid-column: 1 / -1; }
-.row-span-2 { grid-row: span 2; }
-
-/* Safe Area */
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 20px);
 }
