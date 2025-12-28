@@ -5,9 +5,19 @@ import SystemHeader from "@/components/SystemHeader";
 import { RecoveryLock } from "@/components/RecoveryLock";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
+
+// All Feature Components
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { FocusTimer } from "@/components/FocusTimer";
+import { BiologicalStatus } from "@/components/BiologicalStatus";
+import TacticalHistory from "@/components/TacticalHistory";
+import Achievements from "@/components/Achievements";
+import GoalSettings from "@/components/GoalSettings";
+import DataExport from "@/components/DataExport";
+import NotificationControl from "@/components/NotificationControl";
+import RecoveryMode from "@/components/RecoveryMode";
+import { VoiceLogger } from "@/components/VoiceLogger";
 
 // Task categories mapped to new design
 const TASK_CATEGORIES = {
@@ -28,8 +38,13 @@ interface HealthData {
   logged: boolean;
 }
 
+interface RecoveryTask {
+  label: string;
+  completed: boolean;
+}
+
 const Index = () => {
-  // State
+  // Core State
   const [dayCount, setDayCount] = useState(1);
   const [streak, setStreak] = useState(0);
   const [userName, setUserName] = useState("");
@@ -40,11 +55,21 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showRecoveryLock, setShowRecoveryLock] = useState(false);
 
-  // Modal States
+  // Modal States for ALL features
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showFocusTimer, setShowFocusTimer] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
+  const [showDataExport, setShowDataExport] = useState(false);
 
-  // New States
+  // Recovery Tasks
+  const [recoveryTasks, setRecoveryTasks] = useState<RecoveryTask[]>([
+    { label: "Drink a glass of water", completed: false },
+    { label: "Take a 5-min break from screen", completed: false },
+    { label: "Do 10 deep breaths", completed: false },
+  ]);
+
+  // Health Data State
   const [healthData, setHealthData] = useState<Record<CategoryKey, HealthData>>({
     water: { category: "water", value: "", status: "NOT_SET", logged: false },
     food: { category: "food", value: "", status: "NOT_SET", logged: false },
@@ -57,7 +82,7 @@ const Index = () => {
   const { toast } = useToast();
   const { notifyRecoveryMode, notifyCriticalCapacity, permission } = useNotifications();
 
-  // Fetch logic (Simulated/Real)
+  // Fetch User Data
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -68,17 +93,21 @@ const Index = () => {
         setUserName(stats.name || "Traveler");
         if (stats.mode) setOperatingMode(stats.mode);
 
-        // Restore check-ins
+        // Restore check-ins from latest log
         if (stats.latestLog?.health) {
           const restored: any = { ...healthData };
           Object.keys(TASK_CATEGORIES).forEach((key) => {
             const k = key as CategoryKey;
-            // Simple restoration logic
             if (stats.latestLog.health[k]) {
               restored[k] = { ...restored[k], status: 'OK', logged: true, value: 'Logged' };
             }
           });
           setHealthData(restored);
+        }
+
+        // Check for recovery mode from API
+        if (stats.metrics?.capacity < 45 && operatingMode === 'CARETAKER') {
+          setIsRecoveryMode(true);
         }
       } catch (e) {
         console.error("Fetch stats failed", e);
@@ -87,11 +116,12 @@ const Index = () => {
     fetchStats();
   }, []);
 
-  // Recovery Logic
+  // Recovery Lock Logic
   useEffect(() => {
     if (operatingMode !== 'CARETAKER') return;
     if (bioMetrics?.capacity !== undefined && bioMetrics.capacity < 45) {
       setShowRecoveryLock(true);
+      notifyCriticalCapacity?.(bioMetrics.capacity);
     }
   }, [bioMetrics, operatingMode]);
 
@@ -101,19 +131,47 @@ const Index = () => {
       ...prev,
       [category]: { ...prev[category], status, logged: true, value: "Logged" }
     }));
-    toast({ title: "Logged", description: `${TASK_CATEGORIES[category].label} recorded.` });
+    toast({ title: "✓ Logged", description: `${TASK_CATEGORIES[category].label} recorded.` });
+  };
+
+  // Voice Logger Handler
+  const handleVoiceUpdate = (data: any) => {
+    if (data.water) handleLog('water', data.water);
+    if (data.food) handleLog('food', data.food);
+    if (data.sleep) handleLog('sleep', data.sleep);
+    if (data.exercise) handleLog('exercise', data.exercise);
+    if (data.mental) handleLog('mental', data.mental);
+  };
+
+  // Recovery Task Toggle
+  const handleToggleRecoveryTask = (index: number) => {
+    setRecoveryTasks(prev => prev.map((task, i) =>
+      i === index ? { ...task, completed: !task.completed } : task
+    ));
   };
 
   // AI Check-in
   const performCheckIn = async () => {
     setIsLoading(true);
     try {
-      const response = await api.checkIn({
-        water: healthData.water.status,
-        sleep: healthData.sleep.status
-      }); // Simplified payload
+      const payload = {
+        water: healthData.water.status !== 'NOT_SET' ? healthData.water.status : undefined,
+        food: healthData.food.status !== 'NOT_SET' ? healthData.food.status : undefined,
+        sleep: healthData.sleep.status !== 'NOT_SET' ? healthData.sleep.status : undefined,
+        exercise: healthData.exercise.status !== 'NOT_SET' ? healthData.exercise.status : undefined,
+        mentalLoad: healthData.mental.status !== 'NOT_SET' ? healthData.mental.status : undefined,
+      };
+
+      const response = await api.checkIn(payload);
       setAiResponse(response);
-      if (response.recoveryRequired) setIsRecoveryMode(true);
+
+      if (response.metrics) setBioMetrics(response.metrics);
+      if (response.recoveryRequired) {
+        setIsRecoveryMode(true);
+        notifyRecoveryMode?.();
+      }
+
+      toast({ title: "✓ Check-in Complete", description: "Your wellness data has been synced." });
     } catch (e) {
       toast({ title: "Check-in Failed", variant: "destructive" });
     } finally {
@@ -123,27 +181,48 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-1000">
+      {/* Recovery Lock Overlay */}
       <RecoveryLock
         isVisible={showRecoveryLock}
         capacity={bioMetrics?.capacity || 40}
         onAcknowledge={() => setShowRecoveryLock(false)}
       />
 
-      {/* Modals */}
+      {/* Full-Screen Modals */}
       {showAnalytics && <AnalyticsDashboard onClose={() => setShowAnalytics(false)} />}
       {showFocusTimer && <FocusTimer onClose={() => setShowFocusTimer(false)} />}
+      {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
+      {showGoals && <GoalSettings onClose={() => setShowGoals(false)} />}
+      {showDataExport && <DataExport onClose={() => setShowDataExport(false)} />}
 
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
 
+        {/* System Header */}
         <SystemHeader
           dayCount={dayCount}
           isRecoveryMode={isRecoveryMode}
           streak={streak}
           userName={userName}
           operatingMode={operatingMode}
-          onSettingsClick={() => toast({ title: "Settings", description: "Configuration panel coming soon." })}
+          onSettingsClick={() => setShowGoals(true)}
         />
+
+        {/* Notification Control (shows only when needed) */}
+        <NotificationControl />
+
+        {/* Biological Status Panel (RESTORED) */}
+        {bioMetrics && (
+          <BiologicalStatus metrics={{
+            ...bioMetrics,
+            systemMode: isRecoveryMode ? 'LOCKED_RECOVERY' : operatingMode
+          }} />
+        )}
+
+        {/* Recovery Mode Tasks (shows only in recovery) */}
+        {isRecoveryMode && (
+          <RecoveryMode tasks={recoveryTasks} onToggleTask={handleToggleRecoveryTask} />
+        )}
 
         {/* BENTO GRID LAYOUT */}
         <div className="bento-grid">
@@ -154,14 +233,14 @@ const Index = () => {
               <div>
                 <span className="pill pill-ok mb-4">Today's Focus</span>
                 <h2 className="text-3xl md:text-4xl font-display font-medium leading-tight mb-2">
-                  hydrate & <br /> <span className="text-gradient-teal">Recharge.</span>
+                  {aiResponse?.action || "hydrate &"} <br />
+                  <span className="text-gradient-teal">{aiResponse?.focus || "Recharge."}</span>
                 </h2>
                 <p className="text-muted-foreground font-sans">
-                  Your energy is stable. Drinking water now will boost your evening clarity.
+                  {aiResponse?.explanation || "Your energy is stable. Drinking water now will boost your evening clarity."}
                 </p>
               </div>
 
-              {/* Progress Ring or Visual */}
               <div className="mt-6 flex justify-end">
                 <button onClick={performCheckIn} disabled={isLoading} className="btn-primary w-full md:w-auto">
                   {isLoading ? "Syncing..." : "Complete Check-in"}
@@ -170,10 +249,10 @@ const Index = () => {
             </div>
           </div>
 
-          {/* 2. ANALYTICS & FOCUS CARDS (New) */}
+          {/* 2. FEATURE ACCESS CARDS */}
+          {/* Analytics */}
           <div className="bento-card p-4 hover:border-primary/30 cursor-pointer group flex flex-col justify-between"
-            onClick={() => setShowAnalytics(true)}
-          >
+            onClick={() => setShowAnalytics(true)}>
             <div className="flex justify-between items-start">
               <span className="text-2xl">📊</span>
               <span className="text-xs font-bold text-muted-foreground group-hover:text-primary transition-colors">VIEW</span>
@@ -184,9 +263,9 @@ const Index = () => {
             </div>
           </div>
 
+          {/* Focus Timer */}
           <div className="bento-card p-4 hover:border-cyan-500/30 cursor-pointer group flex flex-col justify-between"
-            onClick={() => setShowFocusTimer(true)}
-          >
+            onClick={() => setShowFocusTimer(true)}>
             <div className="flex justify-between items-start">
               <span className="text-2xl">🧘</span>
               <span className="text-xs font-bold text-muted-foreground group-hover:text-cyan-500 transition-colors">START</span>
@@ -197,15 +276,56 @@ const Index = () => {
             </div>
           </div>
 
+          {/* Achievements */}
+          <div className="bento-card p-4 hover:border-amber-500/30 cursor-pointer group flex flex-col justify-between"
+            onClick={() => setShowAchievements(true)}>
+            <div className="flex justify-between items-start">
+              <span className="text-2xl">🏆</span>
+              <span className="text-xs font-bold text-muted-foreground group-hover:text-amber-500 transition-colors">VIEW</span>
+            </div>
+            <div className="mt-2">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Trophies</h3>
+              <p className="text-lg font-display font-medium text-white">Achievements</p>
+            </div>
+          </div>
 
-          {/* 3. QUICK LOGGING CARDS (Small) */}
+          {/* Goals */}
+          <div className="bento-card p-4 hover:border-emerald-500/30 cursor-pointer group flex flex-col justify-between"
+            onClick={() => setShowGoals(true)}>
+            <div className="flex justify-between items-start">
+              <span className="text-2xl">🎯</span>
+              <span className="text-xs font-bold text-muted-foreground group-hover:text-emerald-500 transition-colors">EDIT</span>
+            </div>
+            <div className="mt-2">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Targets</h3>
+              <p className="text-lg font-display font-medium text-white">My Goals</p>
+            </div>
+          </div>
+
+          {/* Data Export */}
+          <div className="bento-card p-4 hover:border-violet-500/30 cursor-pointer group flex flex-col justify-between"
+            onClick={() => setShowDataExport(true)}>
+            <div className="flex justify-between items-start">
+              <span className="text-2xl">📤</span>
+              <span className="text-xs font-bold text-muted-foreground group-hover:text-violet-500 transition-colors">EXPORT</span>
+            </div>
+            <div className="mt-2">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Backup</h3>
+              <p className="text-lg font-display font-medium text-white">Export Data</p>
+            </div>
+          </div>
+
+          {/* Voice Logger */}
+          <VoiceLogger onUpdate={handleVoiceUpdate} />
+
+          {/* 3. QUICK LOGGING CARDS */}
           {Object.entries(TASK_CATEGORIES).map(([key, info]) => {
             const k = key as CategoryKey;
             const data = healthData[k];
             return (
-              <div key={key} className={`bento-card p-4 hover:border-primary/30 group cursor-pointer ${data.logged ? 'bg-primary/5 border-primary/20' : ''}`}
-                onClick={() => handleLog(k, 'OK')}
-              >
+              <div key={key}
+                className={`bento-card p-4 hover:border-primary/30 group cursor-pointer ${data.logged ? 'bg-primary/5 border-primary/20' : ''}`}
+                onClick={() => handleLog(k, 'OK')}>
                 <div className="flex justify-between items-start">
                   <span className="text-2xl group-hover:scale-110 transition-transform duration-300">{info.icon}</span>
                   {data.logged && <span className="text-primary text-xs font-bold">✓</span>}
@@ -220,13 +340,18 @@ const Index = () => {
             );
           })}
 
-          {/* 4. WEATHER / ENVIRONMENT (Wide) */}
+          {/* 4. TACTICAL HISTORY (Wide) */}
+          <div className="col-span-2 md:col-span-4 bento-card p-0 overflow-hidden">
+            <TacticalHistory />
+          </div>
+
+          {/* 5. WEATHER WIDGET (Wide) */}
           <div className="col-span-2 bento-card p-0 overflow-hidden">
             <WeatherWidget compact={false} onWeatherUpdate={() => { }} />
           </div>
 
-          {/* 5. AI INSIGHT (Wide) */}
-          {aiResponse && (
+          {/* 6. AI INSIGHT CARD (Wide) - Shows after check-in */}
+          {aiResponse && aiResponse.explanation && (
             <div className="col-span-2 md:col-span-4 bento-card p-6 border-white/10 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
@@ -235,11 +360,11 @@ const Index = () => {
                 <div>
                   <h3 className="text-lg font-display font-medium text-white/90 mb-1">Wellness Insight</h3>
                   <p className="text-muted-foreground font-sans leading-relaxed">
-                    {aiResponse.explanation || "Your patterns suggest a strong recovery. Keep maintaining this sleep schedule."}
+                    {aiResponse.explanation}
                   </p>
-                  {aiResponse.action && (
-                    <div className="mt-3 inline-block px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono">
-                      Suggested: {aiResponse.action}
+                  {aiResponse.prediction && (
+                    <div className="mt-3 inline-block px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-mono text-amber-400">
+                      ⚠ {aiResponse.prediction}
                     </div>
                   )}
                 </div>
