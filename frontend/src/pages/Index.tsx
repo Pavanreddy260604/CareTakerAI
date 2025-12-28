@@ -6,6 +6,8 @@ import { RecoveryLock } from "@/components/RecoveryLock";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { WeatherWidget } from "@/components/WeatherWidget";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+import { FocusTimer } from "@/components/FocusTimer";
 
 // Task categories mapped to new design
 const TASK_CATEGORIES = {
@@ -37,6 +39,10 @@ const Index = () => {
   const [bioMetrics, setBioMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showRecoveryLock, setShowRecoveryLock] = useState(false);
+
+  // Modal States
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showFocusTimer, setShowFocusTimer] = useState(false);
 
   // New States
   const [healthData, setHealthData] = useState<Record<CategoryKey, HealthData>>({
@@ -123,6 +129,10 @@ const Index = () => {
         onAcknowledge={() => setShowRecoveryLock(false)}
       />
 
+      {/* Modals */}
+      {showAnalytics && <AnalyticsDashboard onClose={() => setShowAnalytics(false)} />}
+      {showFocusTimer && <FocusTimer onClose={() => setShowFocusTimer(false)} />}
+
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
 
@@ -160,7 +170,35 @@ const Index = () => {
             </div>
           </div>
 
-          {/* 2. QUICK LOGGING CARDS (Small) */}
+          {/* 2. ANALYTICS & FOCUS CARDS (New) */}
+          <div className="bento-card p-4 hover:border-primary/30 cursor-pointer group flex flex-col justify-between"
+            onClick={() => setShowAnalytics(true)}
+          >
+            <div className="flex justify-between items-start">
+              <span className="text-2xl">📊</span>
+              <span className="text-xs font-bold text-muted-foreground group-hover:text-primary transition-colors">VIEW</span>
+            </div>
+            <div className="mt-2">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Analytics</h3>
+              <p className="text-lg font-display font-medium text-white">Trends & Insights</p>
+            </div>
+          </div>
+
+          <div className="bento-card p-4 hover:border-cyan-500/30 cursor-pointer group flex flex-col justify-between"
+            onClick={() => setShowFocusTimer(true)}
+          >
+            <div className="flex justify-between items-start">
+              <span className="text-2xl">🧘</span>
+              <span className="text-xs font-bold text-muted-foreground group-hover:text-cyan-500 transition-colors">START</span>
+            </div>
+            <div className="mt-2">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Deep Work</h3>
+              <p className="text-lg font-display font-medium text-white">Focus Timer</p>
+            </div>
+          </div>
+
+
+          {/* 3. QUICK LOGGING CARDS (Small) */}
           {Object.entries(TASK_CATEGORIES).map(([key, info]) => {
             const k = key as CategoryKey;
             const data = healthData[k];
@@ -182,12 +220,12 @@ const Index = () => {
             );
           })}
 
-          {/* 3. WEATHER / ENVIRONMENT (Wide) */}
+          {/* 4. WEATHER / ENVIRONMENT (Wide) */}
           <div className="col-span-2 bento-card p-0 overflow-hidden">
             <WeatherWidget compact={false} onWeatherUpdate={() => { }} />
           </div>
 
-          {/* 4. AI INSIGHT (Wide) */}
+          {/* 5. AI INSIGHT (Wide) */}
           {aiResponse && (
             <div className="col-span-2 md:col-span-4 bento-card p-6 border-white/10 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
               <div className="flex items-start gap-4">

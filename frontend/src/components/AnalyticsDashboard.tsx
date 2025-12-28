@@ -58,10 +58,10 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
 
     if (loading) {
         return (
-            <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-primary font-mono text-sm">Loading Analytics...</p>
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+                <div className="text-center animate-pulse">
+                    <span className="text-4xl">📊</span>
+                    <p className="text-muted-foreground font-display text-sm mt-4">Synthesizing Data...</p>
                 </div>
             </div>
         );
@@ -69,387 +69,218 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
 
     if (error) {
         return (
-            <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
-                <div className="text-center max-w-sm">
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-4">
+                <div className="glass-card max-w-sm text-center">
                     <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
                         <span className="text-3xl">⚠️</span>
                     </div>
-                    <p className="text-destructive font-mono mb-4">{error}</p>
-                    <button
-                        onClick={onClose}
-                        className="text-primary hover:underline font-mono px-4 py-2"
-                    >
-                        Close
-                    </button>
+                    <p className="text-destructive font-display font-medium mb-4">{error}</p>
+                    <button onClick={onClose} className="btn-ghost">Close</button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="fixed inset-0 bg-black z-50 overflow-auto safe-area-bottom">
-            <div className="max-w-4xl mx-auto px-4 py-6 pb-20 sm:pb-6">
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-xl z-50 overflow-auto safe-area-bottom animate-fade-in">
+            <div className="max-w-5xl mx-auto px-4 py-6 pb-24">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-6 sticky top-0 bg-background py-2 -mx-4 px-4 z-10">
-                    <h2 className="text-xl sm:text-2xl font-mono font-bold text-primary flex items-center gap-2">
-                        <span>📊</span>
-                        <span>Analytics</span>
-                    </h2>
+                <div className="flex justify-between items-center mb-8 sticky top-0 py-4 z-20 bg-background/50 backdrop-blur-md">
+                    <div>
+                        <h2 className="text-3xl font-display font-medium text-white tracking-tight">
+                            Wellness Analytics
+                        </h2>
+                        <p className="text-sm text-muted-foreground">Your biological trends</p>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="text-muted-foreground hover:text-white text-2xl p-2 -mr-2 transition-colors"
+                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all"
                     >
                         ✕
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                    <button
-                        onClick={() => setActiveTab('trends')}
-                        className={`px-4 py-2.5 font-mono text-sm rounded-xl transition-all whitespace-nowrap ${activeTab === 'trends'
-                            ? 'bg-primary text-black font-bold'
-                            : 'bg-muted/20 text-muted-foreground hover:text-white'
-                            }`}
-                    >
-                        30-Day Trends
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('weekly')}
-                        className={`px-4 py-2.5 font-mono text-sm rounded-xl transition-all whitespace-nowrap ${activeTab === 'weekly'
-                            ? 'bg-primary text-black font-bold'
-                            : 'bg-muted/20 text-muted-foreground hover:text-white'
-                            }`}
-                    >
-                        Weekly Summary
-                    </button>
-                    <button
-                        onClick={async () => {
-                            setActiveTab('insights');
-                            if (!weeklyInsights && !insightsLoading) {
-                                setInsightsLoading(true);
-                                try {
-                                    const insights = await api.getWeeklySummary();
-                                    setWeeklyInsights(insights);
-                                } catch (e) {
-                                    console.error('Failed to load insights:', e);
+                <div className="flex gap-2 mb-8 p-1 bg-white/5 rounded-2xl w-fit">
+                    {(['trends', 'weekly', 'insights'] as const).map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => {
+                                setActiveTab(tab);
+                                if (tab === 'insights' && !weeklyInsights && !insightsLoading) {
+                                    setInsightsLoading(true);
+                                    api.getWeeklySummary().then(setWeeklyInsights).catch(console.error).finally(() => setInsightsLoading(false));
                                 }
-                                setInsightsLoading(false);
-                            }
-                        }}
-                        className={`px-4 py-2.5 font-mono text-sm rounded-xl transition-all whitespace-nowrap ${activeTab === 'insights'
-                            ? 'bg-cyan-500 text-black font-bold'
-                            : 'bg-muted/20 text-muted-foreground hover:text-white'
-                            }`}
-                    >
-                        🧠 AI Insights
-                    </button>
+                            }}
+                            className={`px-6 py-2.5 font-display font-medium text-sm rounded-xl transition-all ${activeTab === tab
+                                    ? 'bg-primary text-primary-foreground shadow-lg'
+                                    : 'text-muted-foreground hover:text-white'
+                                }`}
+                        >
+                            {tab === 'trends' ? 'Trends' : tab === 'weekly' ? 'Weekly' : 'AI Insights'}
+                        </button>
+                    ))}
                 </div>
 
-                {/* Summary Stats - Responsive Grid */}
-                {data?.summary && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-6">
-                        <StatCard label="Total Days" value={data.summary.totalDays} />
-                        <StatCard
-                            label="Avg Capacity"
-                            value={`${data.summary.avgCapacity}%`}
-                            color={data.summary.avgCapacity >= 60 ? 'text-primary' : 'text-yellow-500'}
-                        />
-                        <StatCard label="Low Sleep" value={data.summary.lowSleepDays} color="text-destructive" />
-                        <StatCard label="High Stress" value={data.summary.highStressDays} color="text-yellow-500" />
-                        <StatCard label="Exercise" value={data.summary.exerciseDays} color="text-primary" />
-                    </div>
-                )}
+                {/* Content */}
+                <div className="animate-slide-up">
 
-                {/* Trends Tab */}
-                {activeTab === 'trends' && (
-                    <div className="bg-[#0a0a0a] border border-muted/30 rounded-xl p-4 sm:p-5">
-                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-4">
-                            Capacity Over Time
-                        </p>
+                    {/* Summary Cards */}
+                    {data?.summary && (
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                            <StatCard label="Total Days" value={data.summary.totalDays} icon="📅" />
+                            <StatCard
+                                label="Avg Capacity"
+                                value={`${data.summary.avgCapacity}%`}
+                                icon="🔋"
+                                color={data.summary.avgCapacity >= 70 ? 'text-emerald-400' : 'text-amber-400'}
+                            />
+                            <StatCard label="Sleep Issues" value={data.summary.lowSleepDays} icon="😴" color="text-rose-400" />
+                            <StatCard label="High Stress" value={data.summary.highStressDays} icon="🧠" color="text-amber-400" />
+                            <StatCard label="Workouts" value={data.summary.exerciseDays} icon="🏃" color="text-emerald-400" />
+                        </div>
+                    )}
 
-                        {data?.trends && data.trends.length > 0 ? (
-                            <>
-                                {/* Chart visualization - horizontally scrollable on mobile */}
-                                <div className="overflow-x-auto scroll-container pb-2 -mx-4 px-4">
-                                    <div
-                                        className="flex items-end gap-1.5 h-40 mb-4"
-                                        style={{ minWidth: `${Math.max(320, data.trends.length * 16)}px` }}
-                                    >
-                                        {data.trends.map((day, idx) => {
-                                            const height = Math.max(8, day.capacity);
-                                            const color = day.capacity >= 70
-                                                ? 'bg-primary'
-                                                : day.capacity >= 45
-                                                    ? 'bg-yellow-500'
-                                                    : 'bg-destructive';
-                                            return (
+                    {/* Trends Tab */}
+                    {activeTab === 'trends' && (
+                        <div className="glass-card p-6">
+                            <h3 className="text-lg font-display font-medium mb-6">Capacity Trend (30 Days)</h3>
+
+                            {data?.trends && data.trends.length > 0 ? (
+                                <div className="h-64 flex items-end gap-2 overflow-x-auto pb-4">
+                                    {data.trends.map((day, idx) => {
+                                        const height = Math.max(10, day.capacity);
+                                        const isLow = day.capacity < 45;
+                                        const isHigh = day.capacity >= 70;
+
+                                        return (
+                                            <div key={idx} className="flex-1 min-w-[20px] h-full flex flex-col justify-end group relative cursor-pointer">
                                                 <div
-                                                    key={idx}
-                                                    className="flex-1 flex flex-col items-center justify-end h-full group min-w-[14px]"
-                                                >
-                                                    {/* Tooltip on hover */}
-                                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-mono text-foreground bg-background/90 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                                                        {day.date}: {day.capacity}%
-                                                    </div>
-                                                    <div
-                                                        className={`w-full rounded-t-sm transition-all ${color} group-hover:opacity-80`}
-                                                        style={{ height: `${height}%` }}
-                                                    />
-                                                    <span className="text-[8px] sm:text-[9px] text-muted-foreground mt-1.5 truncate">
-                                                        {day.day}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Legend */}
-                                <div className="flex flex-wrap gap-3 sm:gap-4 text-[10px] font-mono text-muted-foreground justify-center">
-                                    <span className="flex items-center gap-1.5">
-                                        <span className="inline-block w-3 h-3 bg-primary rounded-sm" />
-                                        <span>Good (≥70%)</span>
-                                    </span>
-                                    <span className="flex items-center gap-1.5">
-                                        <span className="inline-block w-3 h-3 bg-yellow-500 rounded-sm" />
-                                        <span>Warning (45-69%)</span>
-                                    </span>
-                                    <span className="flex items-center gap-1.5">
-                                        <span className="inline-block w-3 h-3 bg-destructive rounded-sm" />
-                                        <span>Critical (&lt;45%)</span>
-                                    </span>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="text-center py-12">
-                                <div className="w-16 h-16 rounded-full bg-muted/10 flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-3xl">📈</span>
-                                </div>
-                                <p className="text-muted-foreground font-mono mb-2">No trend data yet</p>
-                                <p className="text-[11px] text-muted-foreground/70">
-                                    Start logging daily to see your capacity chart
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Weekly Tab */}
-                {activeTab === 'weekly' && data?.weekly && (
-                    <div className="space-y-4">
-                        {data.weekly.stats ? (
-                            <>
-                                <div className="bg-[#0a0a0a] border border-muted/30 rounded-xl p-4 sm:p-5">
-                                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-4">
-                                        This Week's Stats
-                                    </p>
-                                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                                        <StatCard label="Days Logged" value={data.weekly.stats.daysLogged} />
-                                        <StatCard label="Avg Capacity" value={`${data.weekly.stats.avgCapacity}%`} />
-                                        <StatCard label="Exercise" value={`${data.weekly.stats.exerciseDays}/7`} color="text-primary" />
-                                    </div>
-                                </div>
-
-                                {data.weekly.insights && data.weekly.insights.length > 0 && (
-                                    <div className="bg-[#0a0a0a] border border-muted/30 rounded-xl p-4 sm:p-5">
-                                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-4">
-                                            Weekly Insights
-                                        </p>
-                                        <div className="space-y-2">
-                                            {data.weekly.insights.map((insight, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className={`p-3 sm:p-4 rounded-xl border ${insight.type === 'positive'
-                                                        ? 'border-primary/30 bg-primary/5 text-primary'
-                                                        : 'border-yellow-500/30 bg-yellow-500/5 text-yellow-500'
+                                                    className={`w-full rounded-t-lg transition-all duration-500 hover:opacity-80 ${isHigh ? 'bg-gradient-to-t from-emerald-500/50 to-emerald-400' :
+                                                            isLow ? 'bg-gradient-to-t from-rose-500/50 to-rose-400' :
+                                                                'bg-gradient-to-t from-amber-500/50 to-amber-400'
                                                         }`}
-                                                >
-                                                    <p className="text-sm font-mono leading-relaxed">
-                                                        {insight.type === 'positive' ? '✓ ' : '⚠ '}
-                                                        {insight.text}
-                                                    </p>
+                                                    style={{ height: `${height}%` }}
+                                                />
+                                                {/* Tooltip */}
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-black/90 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none border border-white/10">
+                                                    <p className="font-bold">{day.date}</p>
+                                                    <p>Capacity: {day.capacity}%</p>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <div className="text-center py-12">
-                                <div className="w-16 h-16 rounded-full bg-muted/10 flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-3xl">📅</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <p className="text-muted-foreground font-mono">
-                                    No data for this week yet
-                                </p>
-                                <p className="text-[11px] text-muted-foreground/70 mt-1">
-                                    Start logging to see weekly insights
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            ) : (
+                                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                                    No trend data available yet.
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                {/* AI Insights Tab */}
-                {activeTab === 'insights' && (
-                    <div className="space-y-4">
-                        {insightsLoading ? (
-                            <div className="text-center py-12">
-                                <div className="w-10 h-10 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                                <p className="text-cyan-500 font-mono text-sm">Analyzing your data...</p>
-                            </div>
-                        ) : weeklyInsights?.hasEnoughData ? (
-                            <>
-                                {/* Overview Stats */}
-                                {weeklyInsights.overview && (
-                                    <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-xl p-4 sm:p-5">
-                                        <p className="text-[10px] font-mono text-cyan-500 uppercase tracking-widest mb-4">
-                                            📊 Weekly Overview
-                                        </p>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div className="text-center">
-                                                <p className="text-2xl font-mono font-bold text-cyan-500">{weeklyInsights.overview.avgCapacity}%</p>
-                                                <p className="text-[10px] text-muted-foreground">Avg Capacity</p>
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="text-2xl font-mono font-bold text-primary">{weeklyInsights.overview.sleepQualityRate}%</p>
-                                                <p className="text-[10px] text-muted-foreground">Good Sleep</p>
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="text-2xl font-mono font-bold text-yellow-500">{weeklyInsights.overview.stressRate}%</p>
-                                                <p className="text-[10px] text-muted-foreground">High Stress</p>
-                                            </div>
-                                        </div>
+                    {/* Weekly Tab */}
+                    {activeTab === 'weekly' && data?.weekly?.stats && (
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="glass-card p-6">
+                                <h3 className="text-lg font-display font-medium mb-4">Weekly Performance</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl">
+                                        <span className="text-muted-foreground">Avg Capacity</span>
+                                        <span className="text-xl font-bold">{data.weekly.stats.avgCapacity}%</span>
                                     </div>
-                                )}
+                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl">
+                                        <span className="text-muted-foreground">Days Logged</span>
+                                        <span className="text-xl font-bold">{data.weekly.stats.daysLogged}/7</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl">
+                                        <span className="text-muted-foreground">Hydration Issues</span>
+                                        <span className="text-xl font-bold text-rose-400">{data.weekly.stats.hydrationIssues}</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                                {/* Best & Worst Days */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    {weeklyInsights.bestDay && (
-                                        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
-                                            <p className="text-[10px] font-mono text-primary uppercase mb-2">🏆 Best Day</p>
-                                            <p className="text-lg font-bold font-mono text-primary">{weeklyInsights.bestDay.dayName}</p>
-                                            <p className="text-sm text-muted-foreground">{weeklyInsights.bestDay.capacity}% capacity</p>
-                                            <p className="text-[10px] text-muted-foreground mt-1">{weeklyInsights.bestDay.reason}</p>
+                            <div className="glass-card p-6">
+                                <h3 className="text-lg font-display font-medium mb-4">Key Insights</h3>
+                                <div className="space-y-3">
+                                    {data.weekly.insights?.map((insight, idx) => (
+                                        <div key={idx} className={`p-4 rounded-xl border ${insight.type === 'positive' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-amber-500/20 bg-amber-500/5'
+                                            }`}>
+                                            <p className="text-sm font-medium leading-relaxed opacity-90">
+                                                {insight.text}
+                                            </p>
                                         </div>
-                                    )}
-                                    {weeklyInsights.worstDay && (
-                                        <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4">
-                                            <p className="text-[10px] font-mono text-destructive uppercase mb-2">📉 Needs Work</p>
-                                            <p className="text-lg font-bold font-mono text-destructive">{weeklyInsights.worstDay.dayName}</p>
-                                            <p className="text-sm text-muted-foreground">{weeklyInsights.worstDay.capacity}% capacity</p>
-                                            <p className="text-[10px] text-muted-foreground mt-1">{weeklyInsights.worstDay.reason}</p>
-                                        </div>
+                                    ))}
+                                    {(!data.weekly.insights || data.weekly.insights.length === 0) && (
+                                        <p className="text-muted-foreground">No significant insights for this week yet.</p>
                                     )}
                                 </div>
-
-                                {/* Patterns */}
-                                {weeklyInsights.patterns && weeklyInsights.patterns.length > 0 && (
-                                    <div className="bg-[#0a0a0a] border border-muted/30 rounded-xl p-4 sm:p-5">
-                                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-4">
-                                            🔍 Detected Patterns
-                                        </p>
-                                        <div className="space-y-2">
-                                            {weeklyInsights.patterns.map((pattern: any, idx: number) => (
-                                                <div
-                                                    key={idx}
-                                                    className={`p-3 rounded-xl flex items-start gap-3 ${pattern.type === 'positive'
-                                                            ? 'bg-primary/10 border border-primary/30'
-                                                            : 'bg-yellow-500/10 border border-yellow-500/30'
-                                                        }`}
-                                                >
-                                                    <span className="text-xl">{pattern.icon}</span>
-                                                    <p className="text-sm font-mono">{pattern.message}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Correlations */}
-                                {weeklyInsights.correlations && weeklyInsights.correlations.length > 0 && (
-                                    <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-xl p-4 sm:p-5">
-                                        <p className="text-[10px] font-mono text-cyan-500 uppercase tracking-widest mb-4">
-                                            🔗 Correlations Found
-                                        </p>
-                                        <div className="space-y-3">
-                                            {weeklyInsights.correlations.map((corr: any, idx: number) => (
-                                                <div key={idx} className="flex items-center gap-3 p-3 bg-cyan-500/5 rounded-lg">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${corr.impact === 'positive' ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'
-                                                        }`}>
-                                                        {corr.impact === 'positive' ? '+' : '-'}{corr.difference}%
-                                                    </div>
-                                                    <p className="text-sm font-mono text-muted-foreground">{corr.message}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Recommendations */}
-                                {weeklyInsights.recommendations && weeklyInsights.recommendations.length > 0 && (
-                                    <div className="bg-[#0a0a0a] border border-primary/30 rounded-xl p-4 sm:p-5">
-                                        <p className="text-[10px] font-mono text-primary uppercase tracking-widest mb-4">
-                                            💡 Recommendations
-                                        </p>
-                                        <div className="space-y-3">
-                                            {weeklyInsights.recommendations.map((rec: any, idx: number) => (
-                                                <div key={idx} className="p-3 bg-primary/5 rounded-lg border-l-4 border-primary">
-                                                    <p className="text-sm font-mono font-bold text-primary">{rec.action}</p>
-                                                    <p className="text-[11px] text-muted-foreground mt-1">{rec.reason}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Day of Week Analysis */}
-                                {weeklyInsights.dayOfWeekAnalysis?.insights?.length > 0 && (
-                                    <div className="bg-[#0a0a0a] border border-muted/30 rounded-xl p-4 sm:p-5">
-                                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-4">
-                                            📅 Day-of-Week Patterns
-                                        </p>
-                                        <div className="space-y-2">
-                                            {weeklyInsights.dayOfWeekAnalysis.insights.map((insight: any, idx: number) => (
-                                                <div key={idx} className="p-3 bg-muted/10 rounded-lg">
-                                                    <p className="text-sm font-mono">{insight.message}</p>
-                                                    <p className="text-[10px] text-primary mt-1">💡 {insight.suggestion}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <div className="text-center py-12">
-                                <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-3xl">🧠</span>
-                                </div>
-                                <p className="text-muted-foreground font-mono">
-                                    {weeklyInsights?.message || 'Need at least 3 days of data for insights'}
-                                </p>
-                                <p className="text-[11px] text-muted-foreground/70 mt-1">
-                                    Keep checking in daily to unlock AI insights
-                                </p>
                             </div>
-                        )}
-                    </div>
-                )}
+                        </div>
+                    )}
+
+                    {/* AI Insights Tab */}
+                    {activeTab === 'insights' && (
+                        <div className="space-y-6">
+                            {insightsLoading ? (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+                                    <p className="text-muted-foreground">Analyzing patterns...</p>
+                                </div>
+                            ) : weeklyInsights ? (
+                                <>
+                                    <div className="bento-grid !p-0 !pb-0 md:!grid-cols-3">
+                                        {/* Overview */}
+                                        <div className="bento-card p-6 flex flex-col items-center justify-center text-center">
+                                            <span className="text-4xl mb-2">🧠</span>
+                                            <span className="text-2xl font-bold text-gradient-teal">{weeklyInsights.overview?.avgCapacity || 0}%</span>
+                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Avg Capacity</span>
+                                        </div>
+                                        <div className="bento-card p-6 flex flex-col items-center justify-center text-center">
+                                            <span className="text-4xl mb-2">😴</span>
+                                            <span className="text-2xl font-bold text-white">{weeklyInsights.overview?.sleepQualityRate || 0}%</span>
+                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Sleep Quality</span>
+                                        </div>
+                                        <div className="bento-card p-6 flex flex-col items-center justify-center text-center">
+                                            <span className="text-4xl mb-2">⚡</span>
+                                            <span className="text-2xl font-bold text-amber-400">{weeklyInsights.overview?.stressRate || 0}%</span>
+                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Stress Rate</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Detailed Text Insights */}
+                                    <div className="glass-card p-6">
+                                        <h3 className="text-lg font-display font-medium mb-4">Deep Analysis</h3>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            {weeklyInsights.recommendations?.map((rec: any, idx: number) => (
+                                                <div key={idx} className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                                                    <p className="font-bold text-primary mb-1">{rec.action}</p>
+                                                    <p className="text-sm text-muted-foreground">{rec.reason}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    Unable to generate insights at this time.
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                </div>
             </div>
         </div>
     );
 }
 
-function StatCard({ label, value, color = 'text-white' }: { label: string; value: string | number; color?: string }) {
+function StatCard({ label, value, icon, color = 'text-white' }: { label: string; value: string | number; icon: string; color?: string }) {
     return (
-        <div className="bg-[#0a0a0a] border border-muted/30 rounded-xl p-3 sm:p-4 text-center">
-            <p className="text-[9px] sm:text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1">
-                {label}
-            </p>
-            <p className={`text-lg sm:text-xl font-mono font-bold ${color}`}>
-                {value}
-            </p>
+        <div className="glass p-4 rounded-2xl flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors">
+            <span className="text-2xl mb-2">{icon}</span>
+            <span className={`text-xl font-bold font-display ${color}`}>{value}</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">{label}</span>
         </div>
     );
 }

@@ -25,20 +25,19 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
     const [totalFocusTime, setTotalFocusTime] = useState(0);
     const [weeklyStats, setWeeklyStats] = useState<{ totalSessions: number; totalMinutes: number } | null>(null);
 
-    // Refs for interval and state access inside interval
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const sessionsRef = useRef(sessionsCompleted);
     const totalTimeRef = useRef(totalFocusTime);
 
     const { toast } = useToast();
 
-    // Sync refs with state
+    // Sync refs
     useEffect(() => {
         sessionsRef.current = sessionsCompleted;
         totalTimeRef.current = totalFocusTime;
     }, [sessionsCompleted, totalFocusTime]);
 
-    // Load saved stats
+    // Load stats
     useEffect(() => {
         const savedStats = localStorage.getItem('focus_stats');
         if (savedStats) {
@@ -52,17 +51,9 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
             } catch (e) { }
         }
 
-        // Fetch weekly stats
-        const fetchWeeklyStats = async () => {
-            try {
-                const stats = await api.getFocusStats();
-                setWeeklyStats(stats);
-            } catch (e) { }
-        };
-        fetchWeeklyStats();
+        api.getFocusStats().then(setWeeklyStats).catch(() => { });
     }, []);
 
-    // Save stats
     const saveStats = useCallback(async (sessions: number, totalTime: number, sessionDuration?: number) => {
         localStorage.setItem('focus_stats', JSON.stringify({
             date: new Date().toDateString(),
@@ -77,11 +68,10 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
         }
     }, []);
 
-    // REAL-TIME COUNTDOWN WITH TARGET TIME LOGIC
+    // Timer Logic
     useEffect(() => {
         if (state === 'focus' || state === 'break') {
             const now = Date.now();
-            // Calculate absolute target end time
             const targetTime = now + (timeRemaining * 1000);
 
             intervalRef.current = setInterval(() => {
@@ -95,7 +85,6 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
                     if (intervalRef.current) clearInterval(intervalRef.current);
 
                     if (state === 'focus') {
-                        // Use refs to get current values without stale closures
                         const newSessions = sessionsRef.current + 1;
                         const newTotal = totalTimeRef.current + selectedDuration;
 
@@ -127,13 +116,13 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
                         setTimeRemaining(selectedDuration);
                     }
                 }
-            }, 100); // Check every 100ms for responsiveness
+            }, 100);
         }
 
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [state, selectedDuration]); // Minimal dependencies to ensure stability
+    }, [state, selectedDuration]);
 
     const startFocus = useCallback(() => {
         setTimeRemaining(selectedDuration);
@@ -142,11 +131,8 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
     }, [selectedDuration, toast]);
 
     const pauseResume = useCallback(() => {
-        if (state === 'focus') {
-            setState('paused');
-        } else if (state === 'paused') {
-            setState('focus');
-        }
+        if (state === 'focus') setState('paused');
+        else if (state === 'paused') setState('focus');
     }, [state]);
 
     const stopTimer = useCallback(() => {
@@ -154,13 +140,12 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
             const elapsed = selectedDuration - timeRemaining;
             setTotalFocusTime(t => t + elapsed);
             saveStats(sessionsCompleted, totalFocusTime + elapsed, elapsed);
-            toast({ title: '⏹️ Stopped', description: `${Math.round(elapsed / 60)} min saved` });
         }
         setState('idle');
         setTimeRemaining(selectedDuration);
-    }, [state, selectedDuration, timeRemaining, totalFocusTime, sessionsCompleted, saveStats, toast]);
+    }, [state, selectedDuration, timeRemaining, totalFocusTime, sessionsCompleted, saveStats]);
 
-    // UI Helpers
+    // UI Calculations
     const minutes = Math.floor(timeRemaining / 60);
     const seconds = timeRemaining % 60;
     const total = state === 'break' ? BREAK_DURATION : selectedDuration;
@@ -168,136 +153,130 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
     const circumference = 2 * Math.PI * 120;
     const strokeDashoffset = circumference * (1 - progress / 100);
 
+    // Gradient definitions
+    const gradientId = "timerGradient";
+
     return (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col safe-area-bottom">
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-3xl z-50 flex flex-col safe-area-bottom animate-fade-in">
             {/* Header */}
-            <div className="flex justify-between items-center p-4 border-b border-muted/20">
-                <h2 className="text-lg font-mono font-bold text-primary flex items-center gap-2">
-                    🧘 Focus Timer
+            <div className="flex justify-between items-center p-6 w-full max-w-lg mx-auto">
+                <h2 className="text-2xl font-display font-medium text-white flex items-center gap-2">
+                    <span className="text-3xl">🧘</span> Focus Zone
                 </h2>
-                <button onClick={onClose} className="text-muted-foreground hover:text-white text-2xl p-2">✕</button>
+                <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all">✕</button>
             </div>
 
-            {/* Main */}
-            <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
-                {/* Timer Circle */}
-                <div className="relative w-64 h-64 sm:w-80 sm:h-80 mb-6">
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col items-center justify-center p-4 w-full max-w-lg mx-auto">
+
+                {/* Timer Visualization */}
+                <div className="relative w-72 h-72 sm:w-80 sm:h-80 mb-10">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 260 260">
-                        <circle cx="130" cy="130" r="120" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/20" />
+                        <defs>
+                            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#2dd4bf" />
+                                <stop offset="100%" stopColor="#3b82f6" />
+                            </linearGradient>
+                        </defs>
+                        {/* Track */}
+                        <circle cx="130" cy="130" r="120" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+                        {/* Progress */}
                         <circle
-                            cx="130" cy="130" r="120" fill="none" strokeWidth="8" strokeLinecap="round"
-                            strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
-                            className={`transition-all duration-300 ${state === 'break' ? 'stroke-cyan-500' :
-                                state === 'focus' ? 'stroke-primary' :
-                                    state === 'paused' ? 'stroke-yellow-500' : 'stroke-muted/40'
-                                }`}
+                            cx="130" cy="130" r="120" fill="none" strokeWidth="12" strokeLinecap="round"
+                            stroke={`url(#${gradientId})`}
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            className={`transition-all duration-300 ${state === 'break' ? 'stroke-amber-400' : ''}`}
                         />
                     </svg>
 
-                    {/* Center - LIVE COUNTDOWN */}
+                    {/* Center Content */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <div className="flex items-baseline gap-1">
-                            <span className={`text-6xl sm:text-7xl font-mono font-bold tabular-nums ${state === 'break' ? 'text-cyan-500' :
-                                state === 'focus' ? 'text-primary' :
-                                    state === 'paused' ? 'text-yellow-500' : 'text-foreground'
-                                }`}>
+                            <span className="text-7xl font-display font-bold tracking-tighter text-white tabular-nums">
                                 {minutes.toString().padStart(2, '0')}
                             </span>
-                            <span className={`text-5xl sm:text-6xl font-mono font-bold ${(state === 'focus' || state === 'break') ? 'animate-pulse' : ''
-                                } ${state === 'break' ? 'text-cyan-500' :
-                                    state === 'focus' ? 'text-primary' :
-                                        state === 'paused' ? 'text-yellow-500' : 'text-foreground'
-                                }`}>:</span>
-                            <span className={`text-6xl sm:text-7xl font-mono font-bold tabular-nums transition-all duration-100 ${state === 'break' ? 'text-cyan-500' :
-                                state === 'focus' ? 'text-primary' :
-                                    state === 'paused' ? 'text-yellow-500' : 'text-foreground'
-                                }`}>
+                            <span className={`text-6xl font-display font-bold text-white/50 -translate-y-2 ${state === 'focus' ? 'animate-pulse' : ''}`}>:</span>
+                            <span className="text-7xl font-display font-bold tracking-tighter text-white tabular-nums">
                                 {seconds.toString().padStart(2, '0')}
                             </span>
                         </div>
 
-                        {/* State Badge */}
-                        <div className={`mt-3 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${state === 'break' ? 'bg-cyan-500/20 text-cyan-400' :
-                            state === 'focus' ? 'bg-primary/20 text-primary' :
-                                state === 'paused' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-muted/20 text-muted-foreground'
+                        <div className={`mt-4 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md ${state === 'break' ? 'bg-amber-500/20 text-amber-400' :
+                                state === 'focus' ? 'bg-primary/20 text-primary' :
+                                    'bg-white/5 text-muted-foreground'
                             }`}>
-                            {state === 'idle' && '⏸ Ready'}
-                            {state === 'focus' && '🔥 Focusing'}
-                            {state === 'paused' && '⏸ Paused'}
-                            {state === 'break' && '☕ Break Time'}
+                            {state === 'idle' ? 'Ready to Focus' : state === 'break' ? 'Recharging' : state === 'focus' ? 'Deep Work' : 'Paused'}
                         </div>
                     </div>
                 </div>
 
-                {/* Duration Selection */}
+                {/* Duration Selector */}
                 {state === 'idle' && (
-                    <div className="flex gap-3 mb-6">
+                    <div className="grid grid-cols-3 gap-3 w-full mb-8">
                         {FOCUS_DURATIONS.map(d => (
                             <button
                                 key={d.value}
                                 onClick={() => { setSelectedDuration(d.value); setTimeRemaining(d.value); }}
-                                className={`px-4 py-3 rounded-xl font-mono transition-all flex flex-col items-center ${selectedDuration === d.value
-                                    ? 'bg-primary text-black font-bold scale-105 shadow-lg'
-                                    : 'bg-muted/20 text-muted-foreground hover:text-white'
+                                className={`p-4 rounded-2xl transition-all duration-300 flex flex-col items-center ${selectedDuration === d.value
+                                        ? 'bg-primary text-black scale-105 shadow-glow'
+                                        : 'bg-white/5 hover:bg-white/10 text-muted-foreground'
                                     }`}
                             >
-                                <span className="text-lg font-bold">{d.label}</span>
-                                <span className="text-[10px] opacity-70">{d.desc}</span>
+                                <span className="text-xl font-bold font-display">{d.label}</span>
+                                <span className="text-[10px] uppercase tracking-wide opacity-80">{d.desc}</span>
                             </button>
                         ))}
                     </div>
                 )}
 
                 {/* Controls */}
-                <div className="flex gap-3">
-                    {state === 'idle' && (
-                        <button onClick={startFocus}
-                            className="px-10 py-4 bg-primary text-black font-mono font-bold rounded-xl text-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                            ▶ START
+                <div className="flex gap-4 w-full">
+                    {state === 'idle' ? (
+                        <button onClick={startFocus} className="btn-primary w-full text-lg shadow-glow">
+                            Start Session
                         </button>
-                    )}
-
-                    {(state === 'focus' || state === 'paused') && (
+                    ) : (
                         <>
-                            <button onClick={pauseResume}
-                                className="px-6 py-3 bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 font-mono font-bold rounded-xl">
-                                {state === 'paused' ? '▶ RESUME' : '⏸ PAUSE'}
-                            </button>
-                            <button onClick={stopTimer}
-                                className="px-6 py-3 bg-destructive/20 text-destructive border border-destructive/50 font-mono font-bold rounded-xl">
-                                ⏹ STOP
-                            </button>
+                            {state !== 'break' && (
+                                <>
+                                    <button onClick={pauseResume} className="btn-glass flex-1 border-white/10">
+                                        {state === 'paused' ? 'Resume' : 'Pause'}
+                                    </button>
+                                    <button onClick={stopTimer} className="btn-glass flex-1 border-rose-500/30 text-rose-400 hover:bg-rose-500/10">
+                                        End Session
+                                    </button>
+                                </>
+                            )}
+                            {state === 'break' && (
+                                <button onClick={() => { setState('idle'); setTimeRemaining(selectedDuration); }} className="btn-secondary w-full">
+                                    Skip Break
+                                </button>
+                            )}
                         </>
                     )}
-
-                    {state === 'break' && (
-                        <button onClick={() => { setState('idle'); setTimeRemaining(selectedDuration); }}
-                            className="px-6 py-3 bg-cyan-500/20 text-cyan-500 border border-cyan-500/50 font-mono font-bold rounded-xl">
-                            ⏭ SKIP BREAK
-                        </button>
-                    )}
                 </div>
+
             </div>
 
-            {/* Stats Footer */}
-            <div className="p-4 border-t border-muted/20 bg-muted/5">
-                <div className="grid grid-cols-3 gap-4 text-center max-w-sm mx-auto">
-                    <div>
-                        <p className="text-2xl font-mono font-bold text-primary">{sessionsCompleted}</p>
-                        <p className="text-[10px] font-mono text-muted-foreground uppercase">Today</p>
+            {/* Footer Stats */}
+            <div className="p-6 w-full max-w-lg mx-auto">
+                <div className="glass-card p-4 grid grid-cols-3 divide-x divide-white/10">
+                    <div className="text-center">
+                        <span className="block text-2xl font-bold text-white">{sessionsCompleted}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Sessions</span>
                     </div>
-                    <div className="border-x border-muted/30">
-                        <p className="text-2xl font-mono font-bold text-cyan-500">{Math.round(totalFocusTime / 60)}</p>
-                        <p className="text-[10px] font-mono text-muted-foreground uppercase">Minutes</p>
+                    <div className="text-center">
+                        <span className="block text-2xl font-bold text-primary">{Math.round(totalFocusTime / 60)}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Minutes</span>
                     </div>
-                    <div>
-                        <p className="text-2xl font-mono font-bold text-yellow-500">{weeklyStats?.totalSessions || 0}</p>
-                        <p className="text-[10px] font-mono text-muted-foreground uppercase">Week</p>
+                    <div className="text-center">
+                        <span className="block text-2xl font-bold text-amber-400">{weeklyStats?.totalSessions || 0}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Weekly</span>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-
 export default FocusTimer;
