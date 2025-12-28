@@ -453,6 +453,137 @@ app.get('/api/focus-stats', authMiddleware, async (req, res) => {
     }
 });
 
+// ============================================
+// PHASE 2: USER FEEDBACK SYSTEM
+// ============================================
+const Feedback = require('./src/models/Feedback');
+
+// API Endpoint: Submit Feedback on AI Response (PROTECTED)
+app.post('/api/feedback', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { rating, aiResponse, healthContext, comment } = req.body;
+
+        if (!rating || !['helpful', 'not_helpful'].includes(rating)) {
+            return res.status(400).json({ error: 'Valid rating required (helpful/not_helpful)' });
+        }
+
+        // Create feedback entry
+        const feedback = new Feedback({
+            userId,
+            rating,
+            aiResponse: aiResponse || {},
+            healthContext: healthContext || {},
+            comment: comment || null
+        });
+
+        await feedback.save();
+
+        // Calculate user's feedback stats
+        const userFeedback = await Feedback.find({ userId });
+        const helpful = userFeedback.filter(f => f.rating === 'helpful').length;
+        const total = userFeedback.length;
+
+        res.json({
+            success: true,
+            message: 'Thank you for your feedback!',
+            stats: {
+                totalFeedback: total,
+                helpfulCount: helpful,
+                helpfulRate: total > 0 ? Math.round((helpful / total) * 100) : 0
+            }
+        });
+    } catch (error) {
+        console.error('Feedback Error:', error);
+        res.status(500).json({ error: 'Failed to save feedback' });
+    }
+});
+
+// API Endpoint: Get Feedback Analytics (PROTECTED)
+app.get('/api/feedback/stats', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Get user's feedback
+        const feedback = await Feedback.find({ userId }).sort({ createdAt: -1 }).limit(100);
+
+        if (feedback.length === 0) {
+            return res.json({
+                totalFeedback: 0,
+                helpfulRate: 0,
+                byCategory: {},
+                recentFeedback: []
+            });
+        }
+
+        // Calculate stats
+        const helpful = feedback.filter(f => f.rating === 'helpful').length;
+        const total = feedback.length;
+
+        // Group by category
+        const byCategory = {};
+        feedback.forEach(f => {
+            const cat = f.aiResponse?.category || 'general';
+            if (!byCategory[cat]) {
+                byCategory[cat] = { helpful: 0, total: 0 };
+            }
+            byCategory[cat].total++;
+            if (f.rating === 'helpful') byCategory[cat].helpful++;
+        });
+
+        // Calculate category rates
+        Object.keys(byCategory).forEach(cat => {
+            byCategory[cat].rate = Math.round((byCategory[cat].helpful / byCategory[cat].total) * 100);
+        });
+
+        res.json({
+            totalFeedback: total,
+            helpfulCount: helpful,
+            helpfulRate: Math.round((helpful / total) * 100),
+            byCategory,
+            recentFeedback: feedback.slice(0, 10).map(f => ({
+                rating: f.rating,
+                category: f.aiResponse?.category,
+                action: f.aiResponse?.action,
+                createdAt: f.createdAt
+            }))
+        });
+    } catch (error) {
+        console.error('Feedback Stats Error:', error);
+        res.status(500).json({ error: 'Failed to get feedback stats' });
+    }
+});
+
+// API Endpoint: Track if user followed advice (PROTECTED)
+app.post('/api/feedback/:feedbackId/outcome', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { feedbackId } = req.params;
+        const { followedAdvice, capacityChange, notes } = req.body;
+
+        const feedback = await Feedback.findOneAndUpdate(
+            { _id: feedbackId, userId },
+            {
+                followedAdvice,
+                outcome: {
+                    capacityChange: capacityChange || 0,
+                    notes: notes || ''
+                }
+            },
+            { new: true }
+        );
+
+        if (!feedback) {
+            return res.status(404).json({ error: 'Feedback not found' });
+        }
+
+        res.json({ success: true, feedback });
+    } catch (error) {
+        console.error('Outcome Error:', error);
+        res.status(500).json({ error: 'Failed to update outcome' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Caretaker AI Server running on port ${PORT}`);
 });

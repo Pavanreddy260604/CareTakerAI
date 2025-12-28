@@ -107,6 +107,9 @@ const Index = () => {
   const [showFocusTimer, setShowFocusTimer] = useState(false);
   const [showDataExport, setShowDataExport] = useState(false);
   const [weatherData, setWeatherData] = useState<any>(null);
+  // Feedback state
+  const [feedbackGiven, setFeedbackGiven] = useState<'helpful' | 'not_helpful' | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   // Engagement state
   const [engagement, setEngagement] = useState<{
@@ -825,6 +828,80 @@ const Index = () => {
                 <div className="text-[10px] font-mono text-muted-foreground/50">
                   {confidence >= 80 ? '✅ High confidence' : confidence >= 60 ? '🟡 Moderate confidence' : '🟠 Learning...'}
                 </div>
+              </div>
+
+              {/* Feedback Buttons */}
+              <div className="mt-4 pt-3 border-t border-muted/20">
+                {feedbackGiven ? (
+                  <div className="flex items-center justify-center gap-2 text-sm font-mono">
+                    <span className="text-primary">✅ Thanks for your feedback!</span>
+                    <span className="text-muted-foreground">({feedbackGiven === 'helpful' ? '👍' : '👎'})</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-[10px] font-mono text-muted-foreground">Was this helpful?</span>
+                    <button
+                      onClick={async () => {
+                        setFeedbackLoading(true);
+                        try {
+                          await api.submitFeedback({
+                            rating: 'helpful',
+                            aiResponse: {
+                              action: aiResponse.action,
+                              explanation: aiResponse.explanation,
+                              urgency: aiResponse.urgency,
+                              confidence: aiResponse.confidence,
+                              category: aiResponse.category
+                            },
+                            healthContext: {
+                              ...Object.values(healthData).reduce((acc, h) => ({ ...acc, [h.category]: h.status }), {}),
+                              capacity
+                            }
+                          });
+                          setFeedbackGiven('helpful');
+                          toast({ title: '👍 Thanks!', description: 'Your feedback helps us improve.' });
+                        } catch (e) {
+                          console.error('Feedback error:', e);
+                        }
+                        setFeedbackLoading(false);
+                      }}
+                      disabled={feedbackLoading}
+                      className="px-3 py-1.5 bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-mono font-bold hover:bg-primary/30 transition-all disabled:opacity-50"
+                    >
+                      👍 Yes
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setFeedbackLoading(true);
+                        try {
+                          await api.submitFeedback({
+                            rating: 'not_helpful',
+                            aiResponse: {
+                              action: aiResponse.action,
+                              explanation: aiResponse.explanation,
+                              urgency: aiResponse.urgency,
+                              confidence: aiResponse.confidence,
+                              category: aiResponse.category
+                            },
+                            healthContext: {
+                              ...Object.values(healthData).reduce((acc, h) => ({ ...acc, [h.category]: h.status }), {}),
+                              capacity
+                            }
+                          });
+                          setFeedbackGiven('not_helpful');
+                          toast({ title: '👎 Got it', description: 'We\'ll work on better recommendations.' });
+                        } catch (e) {
+                          console.error('Feedback error:', e);
+                        }
+                        setFeedbackLoading(false);
+                      }}
+                      disabled={feedbackLoading}
+                      className="px-3 py-1.5 bg-muted/20 text-muted-foreground border border-muted/30 rounded-lg text-xs font-mono font-bold hover:bg-muted/30 transition-all disabled:opacity-50"
+                    >
+                      👎 No
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );

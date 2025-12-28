@@ -279,4 +279,54 @@ export const api = {
     }> {
         return authFetch(`${API_BASE_URL}/focus-stats`, {});
     },
+
+    // Feedback: Submit feedback on AI response
+    async submitFeedback(data: {
+        rating: 'helpful' | 'not_helpful';
+        aiResponse?: {
+            action?: string;
+            explanation?: string;
+            urgency?: string;
+            confidence?: number;
+            category?: string;
+        };
+        healthContext?: {
+            water?: string;
+            food?: string;
+            sleep?: string;
+            exercise?: string;
+            mentalLoad?: string;
+            capacity?: number;
+        };
+        comment?: string;
+    }): Promise<{
+        success: boolean;
+        message: string;
+        stats: {
+            totalFeedback: number;
+            helpfulCount: number;
+            helpfulRate: number;
+        };
+    }> {
+        return authFetch(`${API_BASE_URL}/feedback`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    // Feedback: Get feedback stats
+    async getFeedbackStats(): Promise<{
+        totalFeedback: number;
+        helpfulCount: number;
+        helpfulRate: number;
+        byCategory: Record<string, { helpful: number; total: number; rate: number }>;
+        recentFeedback: Array<{
+            rating: string;
+            category: string;
+            action: string;
+            createdAt: string;
+        }>;
+    }> {
+        return authFetch(`${API_BASE_URL}/feedback/stats`, {});
+    },
 };
