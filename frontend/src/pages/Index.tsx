@@ -52,6 +52,8 @@ const Index = () => {
   const [bioMetrics, setBioMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showRecoveryLock, setShowRecoveryLock] = useState(false);
+  const [todayCheckedIn, setTodayCheckedIn] = useState(false);
+  const [nextCheckInTime, setNextCheckInTime] = useState<string>("");
 
   // Modal States for ALL features
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -102,11 +104,22 @@ const Index = () => {
             mental: { category: 'mental', value: 'Logged', status: h.mentalLoad ? 'OK' : 'NOT_SET', logged: !!h.mentalLoad },
           };
           setHealthData(restored);
+
+          // If already checked in today, restore AI response and lock check-in
+          if (stats.todayCheckedIn && stats.latestLog?.aiResponse) {
+            setAiResponse(stats.latestLog.aiResponse);
+            setTodayCheckedIn(true);
+          }
         }
 
         // Check for recovery mode from API
         if (stats.metrics?.capacity < 45 && operatingMode === 'CARETAKER') {
           setIsRecoveryMode(true);
+        }
+
+        // Set todayCheckedIn flag
+        if (stats.todayCheckedIn) {
+          setTodayCheckedIn(true);
         }
       } catch (e) {
         console.error("Fetch stats failed", e);
@@ -114,6 +127,28 @@ const Index = () => {
     };
     fetchStats();
   }, []);
+
+  // Countdown timer to next check-in (midnight)
+  useEffect(() => {
+    if (!todayCheckedIn) return;
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+
+      const diff = tomorrow.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      setNextCheckInTime(`${hours}h ${minutes}m`);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [todayCheckedIn]);
 
   // Recovery Lock Logic
   useEffect(() => {
@@ -149,8 +184,13 @@ const Index = () => {
     ));
   };
 
-  // AI Check-in
+  // AI Check-in (once per day)
   const performCheckIn = async () => {
+    if (todayCheckedIn) {
+      toast({ title: "Already Checked In", description: `Next check-in available in ${nextCheckInTime}` });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const payload = {
@@ -163,6 +203,7 @@ const Index = () => {
 
       const response = await api.checkIn(payload as any);
       setAiResponse(response);
+      setTodayCheckedIn(true);
 
       if (response.metrics) setBioMetrics(response.metrics);
       if (response.recoveryRequired) {
@@ -170,7 +211,7 @@ const Index = () => {
         notifyRecoveryMode?.();
       }
 
-      toast({ title: "✓ Check-in Complete", description: "Your wellness data has been synced." });
+      toast({ title: "✓ Check-in Complete", description: "Your wellness data has been synced. See you tomorrow!" });
     } catch (e) {
       toast({ title: "Check-in Failed", variant: "destructive" });
     } finally {
@@ -252,9 +293,19 @@ const Index = () => {
               </div>
 
               <div className="mt-6 flex justify-end">
-                <button onClick={performCheckIn} disabled={isLoading} className="btn-primary w-full md:w-auto">
-                  {isLoading ? "Analyzing..." : aiResponse ? "Update Check-in" : "Complete Check-in"}
-                </button>
+                {todayCheckedIn ? (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <span className="text-xl">✅</span>
+                    <div>
+                      <p className="text-sm font-medium text-white">Checked in for today</p>
+                      <p className="text-xs">Next check-in in <span className="text-primary font-bold">{nextCheckInTime}</span></p>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={performCheckIn} disabled={isLoading} className="btn-primary w-full md:w-auto">
+                    {isLoading ? "Analyzing..." : "Complete Check-in"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
