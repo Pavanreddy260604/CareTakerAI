@@ -5,6 +5,7 @@
 const path = require('path');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { getMemoryCallback, addStructuredHealthMemory } = require('./memoryService');
+const { compareToBaseline, getUserGoals } = require('./baselineService');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
@@ -33,7 +34,7 @@ const RESPONSE_SCHEMA = {
 // ============================================
 // CONFIDENCE CALCULATION
 // ============================================
-function calculateConfidence(context, memoryContext) {
+function calculateConfidence(context, memoryContext, baselineComparison) {
     let confidence = 50; // Base confidence
 
     // History depth adds confidence
@@ -52,6 +53,11 @@ function calculateConfidence(context, memoryContext) {
 
     // Memory context adds confidence (we have learned about user)
     if (memoryContext && memoryContext.hasSimilarPast) {
+        confidence += 10;
+    }
+
+    // Baseline comparison adds confidence (personalized)
+    if (baselineComparison && baselineComparison.hasBaseline) {
         confidence += 10;
     }
 
@@ -126,17 +132,29 @@ async function processHealthData(context) {
             memoryContext = await getMemoryCallback(context.userId, context.health);
         }
 
+        // PHASE 3: Get baseline comparison
+        let baselineComparison = null;
+        let userGoals = null;
+        if (context.userId) {
+            baselineComparison = await compareToBaseline(
+                context.userId,
+                context.decision?.capacity || 70,
+                context.health
+            );
+            userGoals = await getUserGoals(context.userId);
+        }
+
         // Calculate trend summary
         const trendSummary = calculateTrendSummary(context);
 
-        // Calculate confidence
-        const confidence = calculateConfidence(context, memoryContext);
+        // Calculate confidence (now includes baseline)
+        const confidence = calculateConfidence(context, memoryContext, baselineComparison);
 
         // Get AI response
         let aiResult = null;
 
         if (AI_PROVIDER === 'GEMINI' && geminiModel) {
-            aiResult = await callGeminiStructured(context, timeOfDay, memoryContext, trendSummary);
+            aiResult = await callGeminiStructured(context, timeOfDay, memoryContext, trendSummary, baselineComparison, userGoals);
         } else {
             aiResult = await callLocalMistral(context, timeOfDay, memoryContext, trendSummary);
         }
@@ -170,8 +188,29 @@ async function processHealthData(context) {
 // ============================================
 // STRUCTURED GEMINI CALL
 // ============================================
-async function callGeminiStructured(context, timeOfDay, memoryContext, trendSummary) {
-    const prompt = `You are the Caretaker AI - a precise health strategist.
+async function callGeminiStructured(context, timeOfDay, memoryContext, trendSummary, baselineComparison, userGoals) {
+    // Build baseline context string
+    let baselineContext = '';
+    if (baselineComparison && baselineComparison.hasBaseline) {
+        baselineContext = `
+PERSONAL BASELINE (what's normal for this user):
+- Average Capacity: ${baselineComparison.baseline.avgCapacity}%
+- Current vs Average: ${baselineComparison.capacityVsAverage > 0 ? '+' : ''}${baselineComparison.capacityVsAverage}%
+- Below personal threshold: ${baselineComparison.isBelowThreshold ? 'YES (concerning)' : 'NO'}
+- Personal insights: ${baselineComparison.insights?.map(i => i.message).join('; ') || 'None'}`;
+    }
+
+    // Build goals context string
+    let goalsContext = '';
+    if (userGoals) {
+        goalsContext = `
+USER GOALS:
+- Target sleep: ${userGoals.targetSleepHours} hours
+- Target water: ${userGoals.targetWaterLiters} liters
+- Target exercise: ${userGoals.targetExerciseDays} days/week`;
+    }
+
+    const prompt = `You are the Caretaker AI - a personalized health strategist who knows this user's patterns.
 
 CURRENT STATUS:
 - Capacity: ${context.decision.capacity}%
@@ -179,7 +218,7 @@ CURRENT STATUS:
 - Required Action: ${context.decision.requiredAction}
 - Time of Day: ${timeOfDay}
 
-HEALTH DATA:
+HEALTH DATA TODAY:
 - Sleep: ${context.health.sleep}
 - Water: ${context.health.water}
 - Food: ${context.health.food}
@@ -187,12 +226,14 @@ HEALTH DATA:
 - Mental Load: ${context.health.mentalLoad}
 
 TREND DATA: ${trendSummary}
+${baselineContext}
+${goalsContext}
 ${memoryContext ? `USER MEMORY: ${memoryContext.message}` : ''}
 
 RESPOND WITH EXACTLY THIS JSON FORMAT (no other text):
 {
   "action": "specific task in 3-8 words",
-  "reasoning": "1 sentence explaining why, referencing the data",
+  "reasoning": "1 sentence explaining why, referencing personal baseline if available",
   "urgency": "${context.decision.capacity < 30 ? 'critical' : context.decision.capacity < 50 ? 'high' : context.decision.capacity < 70 ? 'medium' : 'low'}",
   "timeframe": "when to do this",
   "category": "hydration|nutrition|sleep|exercise|mental|general"
@@ -200,10 +241,11 @@ RESPOND WITH EXACTLY THIS JSON FORMAT (no other text):
 
 RULES:
 1. Action MUST be specific and actionable (not vague like "take care of yourself")
-2. Reference the actual data in reasoning
+2. Reference the user's PERSONAL baseline when available (e.g., "Your capacity is 15% below YOUR usual average")
 3. If capacity < 40%, action should focus on RECOVERY
 4. Match category to the most pressing issue
-5. Timeframe should be realistic`;
+5. Timeframe should be realistic
+6. If user is performing BETTER than their baseline, acknowledge it positively`;
 
     try {
         const result = await geminiModel.generateContent(prompt);

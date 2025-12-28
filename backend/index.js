@@ -20,6 +20,7 @@ const { processHealthData } = require('./src/services/aiService');
 const { addMemory, queryMemory, storeWeeklyReflection } = require('./src/services/memoryService');
 const { getEngagementData } = require('./src/services/engagementService');
 const { getFullAnalytics } = require('./src/services/analyticsService');
+const { getBaseline, compareToBaseline, getUserGoals, updateUserGoals, calculateBaseline } = require('./src/services/baselineService');
 
 // Middleware
 const authMiddleware = require('./src/middleware/auth');
@@ -581,6 +582,101 @@ app.post('/api/feedback/:feedbackId/outcome', authMiddleware, async (req, res) =
     } catch (error) {
         console.error('Outcome Error:', error);
         res.status(500).json({ error: 'Failed to update outcome' });
+    }
+});
+
+// ============================================
+// PHASE 3: GOALS & BASELINE
+// ============================================
+
+// API Endpoint: Get User Goals (PROTECTED)
+app.get('/api/goals', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const goals = await getUserGoals(userId);
+        res.json(goals || { targetSleepHours: 7, targetWaterLiters: 2, targetExerciseDays: 3, customGoals: [] });
+    } catch (error) {
+        console.error('Goals Error:', error);
+        res.status(500).json({ error: 'Failed to get goals' });
+    }
+});
+
+// API Endpoint: Update User Goals (PROTECTED)
+app.put('/api/goals', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { targetSleepHours, targetWaterLiters, targetExerciseDays, customGoals } = req.body;
+
+        const goals = {
+            targetSleepHours: Math.max(4, Math.min(12, targetSleepHours || 7)),
+            targetWaterLiters: Math.max(1, Math.min(5, targetWaterLiters || 2)),
+            targetExerciseDays: Math.max(0, Math.min(7, targetExerciseDays || 3)),
+            customGoals: customGoals || []
+        };
+
+        const updated = await updateUserGoals(userId, goals);
+        res.json({ success: true, goals: updated });
+    } catch (error) {
+        console.error('Update Goals Error:', error);
+        res.status(500).json({ error: 'Failed to update goals' });
+    }
+});
+
+// API Endpoint: Get User Baseline (PROTECTED)
+app.get('/api/baseline', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const baseline = await getBaseline(userId);
+
+        if (!baseline) {
+            return res.json({
+                hasBaseline: false,
+                message: 'Not enough data yet. Keep checking in daily!',
+                dataPoints: 0
+            });
+        }
+
+        res.json({
+            hasBaseline: true,
+            ...baseline
+        });
+    } catch (error) {
+        console.error('Baseline Error:', error);
+        res.status(500).json({ error: 'Failed to get baseline' });
+    }
+});
+
+// API Endpoint: Recalculate Baseline (PROTECTED)
+app.post('/api/baseline/recalculate', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const baseline = await calculateBaseline(userId);
+
+        if (!baseline) {
+            return res.json({
+                success: false,
+                message: 'Not enough data to calculate baseline (need at least 7 days)'
+            });
+        }
+
+        res.json({ success: true, baseline });
+    } catch (error) {
+        console.error('Recalculate Baseline Error:', error);
+        res.status(500).json({ error: 'Failed to recalculate baseline' });
+    }
+});
+
+// API Endpoint: Compare to Baseline (PROTECTED)
+app.post('/api/baseline/compare', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { capacity, health } = req.body;
+
+        const comparison = await compareToBaseline(userId, capacity || 70, health || {});
+        res.json(comparison);
+    } catch (error) {
+        console.error('Compare Baseline Error:', error);
+        res.status(500).json({ error: 'Failed to compare to baseline' });
     }
 });
 

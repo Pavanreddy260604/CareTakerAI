@@ -329,4 +329,51 @@ export const api = {
     }> {
         return authFetch(`${API_BASE_URL}/feedback/stats`, {});
     },
+
+    // PHASE 3: Goals
+    async getGoals(): Promise<{
+        targetSleepHours: number;
+        targetWaterLiters: number;
+        targetExerciseDays: number;
+        customGoals: Array<{
+            name: string;
+            target: number;
+            current: number;
+            unit: string;
+        }>;
+    }> {
+        return authFetch(`${API_BASE_URL}/goals`, {});
+    },
+
+    async updateGoals(goals: {
+        targetSleepHours?: number;
+        targetWaterLiters?: number;
+        targetExerciseDays?: number;
+        customGoals?: Array<{ name: string; target: number; current: number; unit: string }>;
+    }): Promise<{ success: boolean; goals: any }> {
+        return authFetch(`${API_BASE_URL}/goals`, {
+            method: 'PUT',
+            body: JSON.stringify(goals),
+        });
+    },
+
+    // PHASE 3: Baseline
+    async getBaseline(): Promise<{
+        hasBaseline: boolean;
+        avgCapacity?: number;
+        avgSleepQuality?: number;
+        avgHydration?: number;
+        avgExercise?: number;
+        avgStress?: number;
+        lowCapacityThreshold?: number;
+        dataPoints?: number;
+        lastCalculated?: string;
+        message?: string;
+    }> {
+        return authFetch(`${API_BASE_URL}/baseline`, {});
+    },
+
+    async recalculateBaseline(): Promise<{ success: boolean; baseline?: any; message?: string }> {
+        return authFetch(`${API_BASE_URL}/baseline/recalculate`, { method: 'POST' });
+    },
 };
