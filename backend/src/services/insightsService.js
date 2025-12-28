@@ -40,15 +40,24 @@ async function generateWeeklySummary(userId) {
         const currentHealth = logs[0]?.health || {};
 
         // Fetch long-term memory insights from Supermemory
+        // Fetch long-term memory insights from Supermemory with 4s timeout
         let memoryInsights = null;
         try {
-            const memoryCallback = await getMemoryCallback(userId, currentHealth);
-            const historicalPatterns = await queryMemory('patterns stress sleep exercise', userId, 5);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Memory fetch timeout')), 4000)
+            );
 
-            if (memoryCallback || historicalPatterns.length > 0) {
+            const fetchPromise = Promise.all([
+                getMemoryCallback(userId, currentHealth),
+                queryMemory('patterns stress sleep exercise', userId, 5)
+            ]);
+
+            const [memoryCallback, historicalPatterns] = await Promise.race([fetchPromise, timeoutPromise]);
+
+            if (memoryCallback || (historicalPatterns && historicalPatterns.length > 0)) {
                 memoryInsights = {
                     callback: memoryCallback,
-                    historicalContext: historicalPatterns.slice(0, 3),
+                    historicalContext: historicalPatterns ? historicalPatterns.slice(0, 3) : [],
                     hasLongTermData: !memoryCallback?.isNewUser
                 };
             }
@@ -66,7 +75,11 @@ async function generateWeeklySummary(userId) {
         let aiRecommendations = null;
         if (geminiModel && logs.length >= 3) {
             try {
-                aiRecommendations = await generateAIRecommendations(overview, patterns, correlations, memoryInsights);
+                const aiTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('AI timeout')), 10000));
+                aiRecommendations = await Promise.race([
+                    generateAIRecommendations(overview, patterns, correlations, memoryInsights),
+                    aiTimeout
+                ]);
             } catch (aiError) {
                 console.error('AI recommendations error (non-fatal):', aiError.message);
             }

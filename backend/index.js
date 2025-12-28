@@ -836,6 +836,35 @@ app.post('/api/focus', authMiddleware, async (req, res) => {
     }
 });
 
+// DEBUG: Test Memory Integration
+app.get('/api/debug/memory', async (req, res) => {
+    try {
+        const userId = 'debug_user'; // Fake ID for public test
+        console.log(`Debug Memory: Testing for user ${userId}`);
+
+        // 1. Test Query
+        const results = await queryMemory('patterns stress sleep', userId, 5);
+
+        // 2. Look for Health Logs
+        const logs = await HealthLog.find({ userId: userId }).sort({ date: -1 }).limit(1);
+        const currentHealth = logs[0]?.health || "No Logs";
+
+        res.json({
+            success: true,
+            userId,
+            queryResults: results,
+            resultCount: results.length,
+            currentHealth,
+            environment: {
+                hasKey: !!process.env.SUPERMEMORY_API_KEY
+            }
+        });
+    } catch (error) {
+        console.error('Debug Memory Error:', error);
+        res.status(500).json({ error: error.message, stack: error.stack });
+    }
+});
+
 // API Endpoint: Get Focus Stats (PROTECTED)
 app.get('/api/focus/stats', authMiddleware, async (req, res) => {
     try {
