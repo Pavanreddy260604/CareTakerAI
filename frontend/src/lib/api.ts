@@ -430,4 +430,54 @@ export const api = {
     }> {
         return authFetch(`${API_BASE_URL}/insights/monthly`, {});
     },
+
+    // PHASE 5: Engagement
+    async getSmartReminder(): Promise<{
+        reminderType: 'none' | 'check_in' | 'missed' | 'evening' | 'morning' | 'recovery_check' | 'evening_update' | 'error';
+        message: string;
+        urgency: 'low' | 'medium' | 'high';
+        suggestedTime?: string;
+        checkedInToday: boolean;
+        typicalCheckInHour: number;
+        currentHour: number;
+        streak: {
+            current: number;
+            longest: number;
+            atRisk: boolean;
+            daysLogged: number;
+        };
+    }> {
+        return authFetch(`${API_BASE_URL}/reminder`, {});
+    },
+
+    async getAchievements(): Promise<{
+        achievements: Array<{
+            id: string;
+            name: string;
+            description: string;
+            icon: string;
+            earned: boolean;
+        }>;
+    }> {
+        return authFetch(`${API_BASE_URL}/achievements`, {});
+    },
+
+    async getTimeContext(): Promise<{
+        period: string;
+        greeting: string;
+        energyExpectation: string;
+        suggestedFocus: string;
+        isWeekend: boolean;
+    }> {
+        return authFetch(`${API_BASE_URL}/time-context`, {});
+    },
+
+    async getStreak(): Promise<{
+        current: number;
+        longest: number;
+        atRisk: boolean;
+        daysLogged: number;
+    }> {
+        return authFetch(`${API_BASE_URL}/streak`, {});
+    },
 };

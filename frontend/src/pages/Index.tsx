@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { FocusTimer } from "@/components/FocusTimer";
 import { DataExport } from "@/components/DataExport";
+import { Achievements } from "@/components/Achievements";
 
 // Task categories that map to health status
 const TASK_CATEGORIES = {
@@ -110,6 +111,8 @@ const Index = () => {
   // Feedback state
   const [feedbackGiven, setFeedbackGiven] = useState<'helpful' | 'not_helpful' | null>(null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  // Phase 5: Achievements
+  const [showAchievements, setShowAchievements] = useState(false);
 
   // Engagement state
   const [engagement, setEngagement] = useState<{
@@ -1080,6 +1083,13 @@ const Index = () => {
           </svg>
           <span>Review</span>
         </button>
+        <button
+          onClick={() => setShowAchievements(true)}
+          className="fab-button bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/50"
+        >
+          <span className="text-lg">🏅</span>
+          <span>Badges</span>
+        </button>
       </div>
 
       {/* Analytics Dashboard Modal */}
@@ -1248,6 +1258,11 @@ const Index = () => {
       {/* Data Export Modal */}
       {showDataExport && (
         <DataExport onClose={() => setShowDataExport(false)} />
+      )}
+
+      {/* Achievements Modal */}
+      {showAchievements && (
+        <Achievements onClose={() => setShowAchievements(false)} />
       )}
     </div>
   );

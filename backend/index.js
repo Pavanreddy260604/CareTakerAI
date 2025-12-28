@@ -22,6 +22,7 @@ const { getEngagementData } = require('./src/services/engagementService');
 const { getFullAnalytics } = require('./src/services/analyticsService');
 const { getBaseline, compareToBaseline, getUserGoals, updateUserGoals, calculateBaseline } = require('./src/services/baselineService');
 const { generateWeeklySummary, getMonthlyTrends } = require('./src/services/insightsService');
+const { getSmartReminder, getUserAchievements, getTimeOfDayContext, calculateStreakStatus } = require('./src/services/reminderService');
 
 // Middleware
 const authMiddleware = require('./src/middleware/auth');
@@ -706,6 +707,57 @@ app.get('/api/insights/monthly', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Monthly Trends Error:', error);
         res.status(500).json({ error: 'Failed to get monthly trends' });
+    }
+});
+
+// ============================================
+// PHASE 5: ENGAGEMENT & POLISH
+// ============================================
+
+// API Endpoint: Get Smart Reminder (PROTECTED)
+app.get('/api/reminder', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const reminder = await getSmartReminder(userId);
+        res.json(reminder);
+    } catch (error) {
+        console.error('Reminder Error:', error);
+        res.status(500).json({ error: 'Failed to get reminder' });
+    }
+});
+
+// API Endpoint: Get Achievements (PROTECTED)
+app.get('/api/achievements', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const achievements = await getUserAchievements(userId);
+        res.json({ achievements });
+    } catch (error) {
+        console.error('Achievements Error:', error);
+        res.status(500).json({ error: 'Failed to get achievements' });
+    }
+});
+
+// API Endpoint: Get Time Context (PROTECTED)
+app.get('/api/time-context', authMiddleware, async (req, res) => {
+    try {
+        const context = getTimeOfDayContext();
+        res.json(context);
+    } catch (error) {
+        console.error('Time Context Error:', error);
+        res.status(500).json({ error: 'Failed to get time context' });
+    }
+});
+
+// API Endpoint: Get Streak Status (PROTECTED)
+app.get('/api/streak', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const streak = await calculateStreakStatus(userId);
+        res.json(streak);
+    } catch (error) {
+        console.error('Streak Error:', error);
+        res.status(500).json({ error: 'Failed to get streak' });
     }
 });
 
