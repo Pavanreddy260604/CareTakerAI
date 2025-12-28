@@ -17,6 +17,26 @@ const hasValidKey = () =>
     process.env.SUPERMEMORY_API_KEY &&
     process.env.SUPERMEMORY_API_KEY !== 'your_supermemory_key_here';
 
+// Helper to extract content from diverse Supermemory response structures
+function extractContent(r) {
+    if (!r) return '';
+
+    // Check direct content
+    if (typeof r.content === 'string' && r.content.length > 0) return r.content;
+
+    // Check chunks array (common in RAG)
+    if (r.chunks && Array.isArray(r.chunks) && r.chunks.length > 0 && r.chunks[0].content) {
+        return r.chunks[0].content;
+    }
+
+    // Check nested chunk or document
+    if (r.chunk?.content) return r.chunk.content;
+    if (r.document?.content) return r.document.content;
+
+    // Fallback: Check if the object ITSELF is the content (weird but possible)
+    return '';
+}
+
 /**
  * Add a memory for a user
  */
@@ -131,7 +151,7 @@ async function recallSimilarState(userId, currentState) {
         if (response.results && response.results.length > 0) {
             console.log(`Supermemory Search: Found ${response.results.length} memories`);
             return response.results.map(r => {
-                const content = r.content || r.chunk?.content || r.document?.content || JSON.stringify(r);
+                const content = extractContent(r) || JSON.stringify(r);
                 return { content, score: r.score || 0 };
             });
         }
@@ -234,9 +254,9 @@ async function queryMemory(query, userId, limit = 3) {
         if (response.results && response.results.length > 0) {
             console.log(`Supermemory: Found ${response.results.length} memories`);
             return response.results.map((r, i) => {
-                let text = r.content || r.chunk?.content || r.document?.content;
+                const text = extractContent(r);
                 if (!text || typeof text !== 'string' || text.trim().length === 0) {
-                    text = `[Debug ${i}] Raw: ${JSON.stringify(r).substring(0, 50)}`;
+                    return `[Unparseable Memory] ${JSON.stringify(r).substring(0, 50)}...`;
                 }
                 return text;
             });
