@@ -1076,6 +1076,13 @@ const Index = () => {
             </svg>
             <span className="bottom-nav-label">Review</span>
           </button>
+          <button
+            onClick={() => setShowFocusTimer(true)}
+            className="bottom-nav-item"
+          >
+            <span className="text-lg">🧘</span>
+            <span className="bottom-nav-label">Focus</span>
+          </button>
         </div>
       </nav>
 
@@ -1112,6 +1119,13 @@ const Index = () => {
         >
           <span className="text-lg">🎯</span>
           <span>Goals</span>
+        </button>
+        <button
+          onClick={() => setShowFocusTimer(true)}
+          className="fab-button bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border-purple-500/50"
+        >
+          <span className="text-lg">🧘</span>
+          <span>Focus</span>
         </button>
       </div>
 
