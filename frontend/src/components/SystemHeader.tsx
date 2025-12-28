@@ -4,18 +4,24 @@ interface SystemHeaderProps {
   streak?: number;
   userName?: string;
   integrity?: number;
+  operatingMode?: 'CARETAKER' | 'OBSERVER';
   onSettingsClick?: () => void;
 }
 
-const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", onSettingsClick }: SystemHeaderProps) => {
+const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", operatingMode = 'CARETAKER', onSettingsClick }: SystemHeaderProps) => {
   return (
     <header className="flex-1 min-w-0">
       {/* Title Row */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="system-indicator system-indicator-active shrink-0" />
-        <h1 className="text-lg sm:text-xl font-medium tracking-tight truncate">
-          CARETAKER AI
-        </h1>
+        <div className={`system-indicator ${operatingMode === 'CARETAKER' ? 'system-indicator-active' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]'} shrink-0`} />
+        <div className="flex flex-col">
+          <h1 className="text-lg sm:text-xl font-medium tracking-tight truncate leading-none">
+            CARETAKER AI
+          </h1>
+          <span className="text-[10px] sm:text-xs font-mono text-muted-foreground tracking-widest opacity-70">
+            MODE: {operatingMode}
+          </span>
+        </div>
         {onSettingsClick && (
           <button
             onClick={onSettingsClick}
@@ -38,7 +44,7 @@ const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", onS
           </p>
         )}
         <p className="text-muted-foreground text-xs sm:text-sm">
-          System monitoring active.
+          {operatingMode === 'CARETAKER' ? 'System monitoring & guidance active.' : 'Passive observation mode.'}
         </p>
 
         {/* Stats Row */}
@@ -56,7 +62,7 @@ const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", onS
         </div>
 
         {/* Recovery Mode Alert */}
-        {isRecoveryMode && (
+        {isRecoveryMode && operatingMode === 'CARETAKER' && (
           <div className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-destructive/10 border border-destructive/30 rounded-lg">
             <span className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
             <span className="text-destructive text-xs sm:text-sm font-medium">

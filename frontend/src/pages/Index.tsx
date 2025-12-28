@@ -79,6 +79,7 @@ const Index = () => {
   const [streak, setStreak] = useState(0);
   const [userName, setUserName] = useState("");
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [operatingMode, setOperatingMode] = useState<'CARETAKER' | 'OBSERVER'>('CARETAKER');
   const [aiResponse, setAiResponse] = useState<{
     systemStatus: string;
     action: string;
@@ -184,6 +185,7 @@ const Index = () => {
         setDayCount(localDayCount);
         setStreak(stats.streak);
         setUserName(stats.name);
+        if (stats.mode) setOperatingMode(stats.mode);
 
         if (stats.todayCheckedIn && stats.latestLog) {
           const log = stats.latestLog;
@@ -525,6 +527,7 @@ const Index = () => {
             streak={streak}
             userName={userName}
             integrity={calculateIntegrity()}
+            operatingMode={operatingMode}
             onSettingsClick={() => setShowSettings(true)}
           />
           <div className="flex items-center gap-2">
@@ -563,8 +566,8 @@ const Index = () => {
         {/* Biological Status - Full Width */}
         <BiologicalStatus metrics={bioMetrics} />
 
-        {/* TODAY'S FOCUS CARD (Prominent) */}
-        {engagement?.focus && (
+        {/* TODAY'S FOCUS CARD (Prominent) - Only in Caretaker Mode */}
+        {engagement?.focus && operatingMode === 'CARETAKER' && (
           <div className={`mb-5 p-4 sm:p-5 rounded-xl border-2 transition-all duration-300 animate-fade-in ${engagement.focus.priority === 'critical'
             ? 'border-destructive bg-destructive/10 shadow-[0_0_20px_rgba(239,68,68,0.3)]'
             : engagement.focus.priority === 'high'
@@ -1224,7 +1227,10 @@ const Index = () => {
                   toggleMode('CARETAKER');
                   setShowSettings(false);
                 }}
-                className="w-full p-4 border border-primary/30 rounded-xl text-left hover:bg-primary/10 active:scale-[0.98] transition-all"
+                className={`w-full p-4 border rounded-xl text-left transition-all active:scale-[0.98] ${operatingMode === 'CARETAKER'
+                  ? 'bg-primary/20 border-primary shadow-[0_0_15px_rgba(34,197,94,0.2)]'
+                  : 'border-primary/30 hover:bg-primary/10'
+                  }`}
               >
                 <p className="font-mono font-bold text-primary mb-1 flex items-center gap-2">
                   <span>🛡️</span>
@@ -1240,7 +1246,10 @@ const Index = () => {
                   toggleMode('OBSERVER');
                   setShowSettings(false);
                 }}
-                className="w-full p-4 border border-muted/30 rounded-xl text-left hover:bg-muted/10 active:scale-[0.98] transition-all"
+                className={`w-full p-4 border rounded-xl text-left transition-all active:scale-[0.98] ${operatingMode === 'OBSERVER'
+                  ? 'bg-blue-500/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                  : 'border-muted/30 hover:bg-muted/10'
+                  }`}
               >
                 <p className="font-mono font-bold text-muted-foreground mb-1 flex items-center gap-2">
                   <span>👁️</span>

@@ -148,7 +148,8 @@ app.get('/api/user/stats', authMiddleware, async (req, res) => {
             todayCheckedIn: !!todayLog,
             latestLog: todayLog,
             totalCheckIns: logs.length,
-            metrics: decisionObject.decision // Use proper decision object
+            metrics: decisionObject.decision,
+            mode: userMode
         });
 
     } catch (error) {
