@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 // Config
 const connectDB = require('./src/config/db');
@@ -77,6 +78,7 @@ const authLimiter = rateLimit({
 });
 
 app.use(generalLimiter);
+app.use(helmet()); // Security Headers
 app.use(express.json());
 
 // Routes (with auth rate limiting)
@@ -831,6 +833,15 @@ app.get('/api/focus/stats', authMiddleware, async (req, res) => {
         console.error('Get Focus Stats Error:', error);
         res.status(500).json({ error: 'Failed to get stats' });
     }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled Error:', err.stack);
+    res.status(500).json({
+        error: 'Something went wrong!',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
 });
 
 app.listen(PORT, () => {

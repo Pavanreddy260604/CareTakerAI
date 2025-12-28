@@ -21,4 +21,8 @@ const focusSessionSchema = new mongoose.Schema({
     }
 });
 
+// Index for retrieving sessions by date range and user
+focusSessionSchema.index({ userId: 1, completedAt: -1 });
+focusSessionSchema.index({ completedAt: 1 });
+
 module.exports = mongoose.model('FocusSession', focusSessionSchema);

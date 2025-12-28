@@ -44,6 +44,10 @@ const FeedbackSchema = new mongoose.Schema({
         capacityChange: Number,  // +/- change in capacity next day
         notes: String
     },
+    timestamp: {
+        type: Date,
+        default: Date.now
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -54,5 +58,6 @@ const FeedbackSchema = new mongoose.Schema({
 FeedbackSchema.index({ userId: 1, createdAt: -1 });
 FeedbackSchema.index({ rating: 1, createdAt: -1 });
 FeedbackSchema.index({ 'aiResponse.category': 1, rating: 1 });
+FeedbackSchema.index({ userId: 1, timestamp: -1 });
 
 module.exports = mongoose.model('Feedback', FeedbackSchema);

@@ -63,22 +63,66 @@ const handleResponse = async (res: Response) => {
 
 // Authenticated fetch wrapper
 const authFetch = async (url: string, options: RequestInit = {}) => {
-    const token = getToken();
-    if (!token) {
-        sessionStorage.setItem('session_expired', 'true');
-        window.location.href = '/login';
-        throw new Error('Not authenticated');
+    const token = localStorage.getItem('caretaker_token'); // Changed to use 'caretaker_token' for consistency with existing getToken/setToken
+
+    // Set a reasonable timeout for requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+    // Merge signals if one was provided in options
+    const signal = options.signal || controller.signal;
+
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+    };
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.status === 401) {
+            removeToken(); // Use existing removeToken function
+            sessionStorage.setItem('session_expired', 'true'); // Set session expired flag
+            dispatchSessionExpired(); // Dispatch event
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+            throw new Error('Session expired');
+        }
+
+        if (!response.ok) {
+            // Try to parse error message JSON
+            let errorMsg = `API Error: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.error || errorData.message || errorMsg;
+            } catch (e) {
+                // Ignore JSON parse error if response body is empty/text
+            }
+            throw new Error(errorMsg);
+        }
+
+        // Return empty object for 204 No Content
+        if (response.status === 204) return {};
+
+        return response.json();
+    } catch (error: any) {
+        clearTimeout(timeoutId);
+
+        if (error.name === 'AbortError') {
+            throw new Error('Request timed out. Please check your connection.');
+        }
+
+        console.error('Fetch error:', error);
+        throw error;
     }
-
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            ...options.headers,
-            'Authorization': token,
-        },
-    });
-
-    return handleResponse(res);
 };
 
 // API calls
@@ -252,33 +296,7 @@ export const api = {
         });
     },
 
-    // Focus: Save a focus session to database
-    async saveFocusSession(duration: number): Promise<{
-        success: boolean;
-        message: string;
-        todayStats: {
-            sessions: number;
-            totalMinutes: number;
-        };
-    }> {
-        return authFetch(`${API_BASE_URL}/focus-session`, {
-            method: 'POST',
-            body: JSON.stringify({ duration }),
-        });
-    },
 
-    // Focus: Get weekly focus stats
-    async getFocusStats(): Promise<{
-        totalSessions: number;
-        totalMinutes: number;
-        dailyBreakdown: Array<{
-            date: string;
-            sessions: number;
-            minutes: number;
-        }>;
-    }> {
-        return authFetch(`${API_BASE_URL}/focus-stats`, {});
-    },
 
     // Feedback: Submit feedback on AI response
     async submitFeedback(data: {
