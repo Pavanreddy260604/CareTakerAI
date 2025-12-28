@@ -286,8 +286,9 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [todayCheckedIn]);
 
-  // Enforcement: Trigger RecoveryLock when capacity < 45%
+  // Enforcement: Trigger RecoveryLock when capacity < 45% (CARETAKER ONLY)
   useEffect(() => {
+    if (operatingMode !== 'CARETAKER') return;
     if (bioMetrics?.capacity !== undefined && bioMetrics.capacity < 45) {
       const lastAcknowledged = localStorage.getItem('recovery_lock_acknowledged');
       const today = new Date().toISOString().split('T')[0];
@@ -300,6 +301,13 @@ const Index = () => {
   // Enforcement: 6-hour cooldown after SURVIVAL mode warning acknowledged
   useEffect(() => {
     const checkCooldown = () => {
+      // In Observer mode, we might still show the timer but not enforce? 
+      // Or just disable entirely. Let's disable enforcement.
+      if (operatingMode !== 'CARETAKER') {
+        setCooldownActive(false);
+        return;
+      }
+
       const lastSurvivalTime = localStorage.getItem('survival_mode_time');
       if (!lastSurvivalTime) {
         setCooldownActive(false);
@@ -326,13 +334,14 @@ const Index = () => {
     checkCooldown();
     const interval = setInterval(checkCooldown, 60000);
     return () => clearInterval(interval);
-  }, [warningsIgnored]);
+  }, [warningsIgnored, operatingMode]);
 
   // NOTIFICATION TRIGGERS
 
   // Trigger notification when capacity drops critically
+  // Trigger notification when capacity drops critically (CARETAKER ONLY)
   useEffect(() => {
-    if (permission !== 'granted' || !bioMetrics?.capacity) return;
+    if (permission !== 'granted' || !bioMetrics?.capacity || operatingMode !== 'CARETAKER') return;
 
     const capacity = bioMetrics.capacity;
     if (capacity < 30) {
@@ -340,7 +349,7 @@ const Index = () => {
     } else if (capacity < 60) {
       notifyLowCapacity(capacity);
     }
-  }, [bioMetrics?.capacity, permission, notifyCriticalCapacity, notifyLowCapacity]);
+  }, [bioMetrics?.capacity, permission, notifyCriticalCapacity, notifyLowCapacity, operatingMode]);
 
   // Trigger notification when recovery lock triggers
   useEffect(() => {
@@ -361,7 +370,7 @@ const Index = () => {
 
   // Check-in reminder (only on page load if not checked in)
   useEffect(() => {
-    if (permission !== 'granted') return;
+    if (permission !== 'granted' || operatingMode === 'OBSERVER') return;
 
     // Only remind once per session
     const reminded = sessionStorage.getItem('checkin_reminded');
@@ -373,7 +382,7 @@ const Index = () => {
       }, 2000);
       return () => clearTimeout(timeout);
     }
-  }, [todayCheckedIn, permission, dayCount, notifyCheckInReminder]);
+  }, [todayCheckedIn, permission, dayCount, notifyCheckInReminder, operatingMode]);
 
   // Log a health category
   const handleLogCategory = useCallback((category: CategoryKey, value: string, status: string) => {
@@ -399,8 +408,11 @@ const Index = () => {
       if (permission === "granted") {
         notifyRecoveryMode();
       }
+      if (permission === "granted") {
+        notifyRecoveryMode();
+      }
     }
-  }, [currentTaskIndex, healthData, categories, permission, notifyRecoveryMode]);
+  }, [currentTaskIndex, healthData, categories, permission, notifyRecoveryMode, operatingMode]);
 
   // Call AI with collected data
   const callAI = useCallback(async () => {
@@ -418,7 +430,7 @@ const Index = () => {
 
       if (response.recoveryRequired) {
         setIsRecoveryMode(true);
-        if (permission === "granted") {
+        if (permission === "granted" && operatingMode === 'CARETAKER') {
           notifyRecoveryMode();
         }
       }
@@ -1268,9 +1280,9 @@ const Index = () => {
         </div>
       )}
 
-      {/* Recovery Lock Enforcement */}
+      {/* Recovery Lock Enforcement (Only in Caretaker Mode) */}
       <RecoveryLock
-        isVisible={showRecoveryLock}
+        isVisible={showRecoveryLock && operatingMode === 'CARETAKER'}
         capacity={bioMetrics?.capacity || 0}
         onAcknowledge={() => {
           setShowRecoveryLock(false);
