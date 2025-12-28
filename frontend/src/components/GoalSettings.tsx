@@ -26,18 +26,45 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
         dataPoints?: number;
     } | null>(null);
 
+    // Current Metrics (from AI)
+    const [currentMetrics, setCurrentMetrics] = useState<{
+        capacity?: number;
+        confidence?: number;
+        sleepDebt?: number;
+        hydrationDebt?: number;
+        mentalDebt?: number;
+    } | null>(null);
+
+    // AI Goal Suggestions
+    const [aiSuggestions, setAiSuggestions] = useState<{
+        suggestions?: { targetSleepHours: number; targetWaterLiters: number; targetExerciseDays: number; explanation: string };
+        currentStats?: { sleepRate: number; waterRate: number; exerciseRate: number };
+    } | null>(null);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [goalsData, baselineData] = await Promise.all([
+                const [goalsData, baselineData, statsData, suggestionsData] = await Promise.all([
                     api.getGoals(),
-                    api.getBaseline()
+                    api.getBaseline(),
+                    api.getUserStats(),
+                    api.getAIGoalSuggestions().catch(() => null)
                 ]);
 
                 setTargetSleepHours(goalsData.targetSleepHours || 7);
                 setTargetWaterLiters(goalsData.targetWaterLiters || 2);
                 setTargetExerciseDays(goalsData.targetExerciseDays || 3);
                 setBaseline(baselineData);
+
+                // Get current metrics from latest stats
+                if (statsData.metrics) {
+                    setCurrentMetrics(statsData.metrics);
+                }
+
+                // Get AI suggestions
+                if (suggestionsData?.hasEnoughData) {
+                    setAiSuggestions(suggestionsData);
+                }
             } catch (e) {
                 console.error('Failed to load settings:', e);
             }
@@ -122,6 +149,90 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                 </div>
             ) : (
                 <div className="max-w-lg mx-auto px-4 py-6 pb-24">
+
+                    {/* SECTION: Current Status (from AI) */}
+                    {currentMetrics && (
+                        <div className="mb-8">
+                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
+                                Current Status
+                            </h2>
+                            <div className="bg-white/5 rounded-2xl overflow-hidden">
+                                <div className="grid grid-cols-2 divide-x divide-white/10">
+                                    <div className="px-4 py-4 text-center">
+                                        <p className={`text-2xl font-bold ${(currentMetrics.capacity || 0) < 30 ? 'text-destructive' :
+                                            (currentMetrics.capacity || 0) < 60 ? 'text-amber-400' : 'text-primary'
+                                            }`}>
+                                            {currentMetrics.capacity || 0}%
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">Cognitive Capacity</p>
+                                    </div>
+                                    <div className="px-4 py-4 text-center">
+                                        <p className={`text-2xl font-bold ${(currentMetrics.confidence || 0) < 0.6 ? 'text-amber-400' : 'text-primary'
+                                            }`}>
+                                            {Math.round((currentMetrics.confidence || 0) * 100)}%
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">Data Confidence</p>
+                                    </div>
+                                </div>
+                                {/* Debts Row */}
+                                <div className="border-t border-white/10 grid grid-cols-3 divide-x divide-white/10">
+                                    <div className="px-3 py-3 text-center">
+                                        <p className="text-sm font-bold text-white">{currentMetrics.sleepDebt || 0}</p>
+                                        <p className="text-[10px] text-muted-foreground">Sleep Debt</p>
+                                    </div>
+                                    <div className="px-3 py-3 text-center">
+                                        <p className="text-sm font-bold text-white">{currentMetrics.hydrationDebt || 0}</p>
+                                        <p className="text-[10px] text-muted-foreground">Hydration</p>
+                                    </div>
+                                    <div className="px-3 py-3 text-center">
+                                        <p className="text-sm font-bold text-white">{currentMetrics.mentalDebt || 0}</p>
+                                        <p className="text-[10px] text-muted-foreground">Mental</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SECTION: AI Suggestions */}
+                    {aiSuggestions?.suggestions && (
+                        <div className="mb-8">
+                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2 flex items-center gap-2">
+                                <span>🤖</span> AI Goal Suggestions
+                            </h2>
+                            <div className="bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20 rounded-2xl p-4">
+                                <p className="text-sm text-white/80 mb-4">
+                                    {aiSuggestions.suggestions.explanation}
+                                </p>
+                                <div className="grid grid-cols-3 gap-3 mb-4">
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-cyan-400">{aiSuggestions.suggestions.targetSleepHours}h</p>
+                                        <p className="text-[10px] text-muted-foreground">Sleep</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-cyan-400">{aiSuggestions.suggestions.targetWaterLiters}L</p>
+                                        <p className="text-[10px] text-muted-foreground">Water</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-cyan-400">{aiSuggestions.suggestions.targetExerciseDays}</p>
+                                        <p className="text-[10px] text-muted-foreground">Exercise Days</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (aiSuggestions.suggestions) {
+                                            setTargetSleepHours(aiSuggestions.suggestions.targetSleepHours);
+                                            setTargetWaterLiters(aiSuggestions.suggestions.targetWaterLiters);
+                                            setTargetExerciseDays(aiSuggestions.suggestions.targetExerciseDays);
+                                            toast({ title: '✨ AI Suggestions Applied', description: 'Save to confirm these goals.' });
+                                        }
+                                    }}
+                                    className="w-full py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-semibold text-sm rounded-xl transition-colors"
+                                >
+                                    Apply AI Suggestions
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* SECTION: Health Goals */}
                     <div className="mb-8">

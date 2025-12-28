@@ -476,8 +476,47 @@ export const api = {
             icon: string;
             earned: boolean;
         }>;
+        aiMotivation?: string;
+        stats?: {
+            totalLogged: number;
+            streak: number;
+            exerciseDays: number;
+            goodSleepDays: number;
+            goodHydrationDays: number;
+            highCapacityDays: number;
+        };
     }> {
         return authFetch(`${API_BASE_URL}/achievements`, {});
+    },
+
+    // AI-powered goal suggestions
+    async getAIGoalSuggestions(): Promise<{
+        hasEnoughData: boolean;
+        message?: string;
+        suggestions?: {
+            targetSleepHours: number;
+            targetWaterLiters: number;
+            targetExerciseDays: number;
+            explanation: string;
+        };
+        currentStats?: {
+            sleepRate: number;
+            waterRate: number;
+            exerciseRate: number;
+            totalDays: number;
+        };
+    }> {
+        return authFetch(`${API_BASE_URL}/goals/ai-suggestions`, {});
+    },
+
+    // AI trend analysis
+    async getAITrendAnalysis(): Promise<{
+        hasEnoughData: boolean;
+        weeks?: Array<{ week: number; avgCapacity: number; days: number }>;
+        trend?: 'improving' | 'stable' | 'declining';
+        aiAnalysis?: string;
+    }> {
+        return authFetch(`${API_BASE_URL}/analytics/ai-trends`, {});
     },
 
     async getTimeContext(): Promise<{

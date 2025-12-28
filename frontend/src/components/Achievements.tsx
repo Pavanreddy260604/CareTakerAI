@@ -17,6 +17,7 @@ export function Achievements({ onClose }: AchievementsProps) {
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [loading, setLoading] = useState(true);
     const [streak, setStreak] = useState<{ current: number; longest: number; atRisk: boolean } | null>(null);
+    const [aiMotivation, setAiMotivation] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -27,6 +28,9 @@ export function Achievements({ onClose }: AchievementsProps) {
                 ]);
                 setAchievements(achievementsData.achievements || []);
                 setStreak(streakData);
+                if (achievementsData.aiMotivation) {
+                    setAiMotivation(achievementsData.aiMotivation);
+                }
             } catch (e) {
                 console.error('Failed to load achievements:', e);
             }
@@ -91,6 +95,19 @@ export function Achievements({ onClose }: AchievementsProps) {
                                     {streak.atRisk && (
                                         <span className="text-yellow-500">⚠️ At risk!</span>
                                     )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* AI Motivation Message */}
+                        {aiMotivation && (
+                            <div className="bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20 rounded-2xl p-4 mb-6">
+                                <div className="flex items-start gap-3">
+                                    <span className="text-2xl">🤖</span>
+                                    <div>
+                                        <p className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest mb-1">AI Coach Says</p>
+                                        <p className="text-sm text-white/90 italic">"{aiMotivation}"</p>
+                                    </div>
                                 </div>
                             </div>
                         )}

@@ -40,12 +40,23 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
     const [activeTab, setActiveTab] = useState<'trends' | 'weekly' | 'insights'>('trends');
     const [weeklyInsights, setWeeklyInsights] = useState<any>(null);
     const [insightsLoading, setInsightsLoading] = useState(false);
+    const [aiTrendAnalysis, setAiTrendAnalysis] = useState<{
+        hasEnoughData: boolean;
+        trend?: 'improving' | 'stable' | 'declining';
+        aiAnalysis?: string;
+    } | null>(null);
 
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
-                const analytics = await api.getAnalytics();
+                const [analytics, trendAnalysis] = await Promise.all([
+                    api.getAnalytics(),
+                    api.getAITrendAnalysis().catch(() => null)
+                ]);
                 setData(analytics);
+                if (trendAnalysis?.hasEnoughData) {
+                    setAiTrendAnalysis(trendAnalysis);
+                }
             } catch (e: any) {
                 console.error('Analytics fetch error:', e);
                 setError(e.message || 'Failed to load analytics');
@@ -113,8 +124,8 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                 }
                             }}
                             className={`px-6 py-2.5 font-display font-medium text-sm rounded-xl transition-all ${activeTab === tab
-                                    ? 'bg-primary text-primary-foreground shadow-lg'
-                                    : 'text-muted-foreground hover:text-white'
+                                ? 'bg-primary text-primary-foreground shadow-lg'
+                                : 'text-muted-foreground hover:text-white'
                                 }`}
                         >
                             {tab === 'trends' ? 'Trends' : tab === 'weekly' ? 'Weekly' : 'AI Insights'}
@@ -143,40 +154,62 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
 
                     {/* Trends Tab */}
                     {activeTab === 'trends' && (
-                        <div className="glass-card p-6">
-                            <h3 className="text-lg font-display font-medium mb-6">Capacity Trend (30 Days)</h3>
+                        <>
+                            <div className="glass-card p-6">
+                                <h3 className="text-lg font-display font-medium mb-6">Capacity Trend (30 Days)</h3>
 
-                            {data?.trends && data.trends.length > 0 ? (
-                                <div className="h-64 flex items-end gap-2 overflow-x-auto pb-4">
-                                    {data.trends.map((day, idx) => {
-                                        const height = Math.max(10, day.capacity);
-                                        const isLow = day.capacity < 45;
-                                        const isHigh = day.capacity >= 70;
+                                {data?.trends && data.trends.length > 0 ? (
+                                    <div className="h-64 flex items-end gap-2 overflow-x-auto pb-4">
+                                        {data.trends.map((day, idx) => {
+                                            const height = Math.max(10, day.capacity);
+                                            const isLow = day.capacity < 45;
+                                            const isHigh = day.capacity >= 70;
 
-                                        return (
-                                            <div key={idx} className="flex-1 min-w-[20px] h-full flex flex-col justify-end group relative cursor-pointer">
-                                                <div
-                                                    className={`w-full rounded-t-lg transition-all duration-500 hover:opacity-80 ${isHigh ? 'bg-gradient-to-t from-emerald-500/50 to-emerald-400' :
+                                            return (
+                                                <div key={idx} className="flex-1 min-w-[20px] h-full flex flex-col justify-end group relative cursor-pointer">
+                                                    <div
+                                                        className={`w-full rounded-t-lg transition-all duration-500 hover:opacity-80 ${isHigh ? 'bg-gradient-to-t from-emerald-500/50 to-emerald-400' :
                                                             isLow ? 'bg-gradient-to-t from-rose-500/50 to-rose-400' :
                                                                 'bg-gradient-to-t from-amber-500/50 to-amber-400'
-                                                        }`}
-                                                    style={{ height: `${height}%` }}
-                                                />
-                                                {/* Tooltip */}
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-black/90 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none border border-white/10">
-                                                    <p className="font-bold">{day.date}</p>
-                                                    <p>Capacity: {day.capacity}%</p>
+                                                            }`}
+                                                        style={{ height: `${height}%` }}
+                                                    />
+                                                    {/* Tooltip */}
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-black/90 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none border border-white/10">
+                                                        <p className="font-bold">{day.date}</p>
+                                                        <p>Capacity: {day.capacity}%</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                                    No trend data available yet.
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="h-64 flex items-center justify-center text-muted-foreground">
+                                        No trend data available yet.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* AI Trend Analysis */}
+                            {aiTrendAnalysis?.aiAnalysis && (
+                                <div className="glass-card p-6 mt-6">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <h3 className="text-lg font-display font-medium">AI Trend Analysis</h3>
+                                        <span className="px-2 py-0.5 text-[10px] font-bold bg-cyan-500/20 text-cyan-400 rounded-full">🤖 AI POWERED</span>
+                                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${aiTrendAnalysis.trend === 'improving' ? 'bg-emerald-500/20 text-emerald-400' :
+                                                aiTrendAnalysis.trend === 'declining' ? 'bg-red-500/20 text-red-400' :
+                                                    'bg-amber-500/20 text-amber-400'
+                                            }`}>
+                                            {aiTrendAnalysis.trend === 'improving' ? '📈 Improving' :
+                                                aiTrendAnalysis.trend === 'declining' ? '📉 Declining' : '➡️ Stable'}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-white/80 leading-relaxed">
+                                        {aiTrendAnalysis.aiAnalysis}
+                                    </p>
                                 </div>
                             )}
-                        </div>
+                        </>
                     )}
 
                     {/* Weekly Tab */}
@@ -250,20 +283,84 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
 
                                     {/* Detailed Text Insights */}
                                     <div className="glass-card p-6">
-                                        <h3 className="text-lg font-display font-medium mb-4">Deep Analysis</h3>
-                                        <div className="grid md:grid-cols-2 gap-4">
-                                            {weeklyInsights.recommendations?.map((rec: any, idx: number) => (
-                                                <div key={idx} className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-                                                    <p className="font-bold text-primary mb-1">{rec.action}</p>
-                                                    <p className="text-sm text-muted-foreground">{rec.reason}</p>
-                                                </div>
-                                            ))}
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <h3 className="text-lg font-display font-medium">Deep Analysis</h3>
+                                            {weeklyInsights.aiPowered && (
+                                                <span className="px-2 py-0.5 text-[10px] font-bold bg-primary/20 text-primary rounded-full">🤖 AI POWERED</span>
+                                            )}
                                         </div>
+                                        {weeklyInsights.recommendations && weeklyInsights.recommendations.length > 0 ? (
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                {weeklyInsights.recommendations.map((rec: any, idx: number) => (
+                                                    <div key={idx} className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                                                        <p className="font-bold text-primary mb-1">{rec.action}</p>
+                                                        <p className="text-sm text-muted-foreground">{rec.reason}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-8 text-muted-foreground">
+                                                <span className="text-3xl block mb-2">✨</span>
+                                                <p className="font-medium">Great job!</p>
+                                                <p className="text-sm">No specific recommendations - you're doing well!</p>
+                                            </div>
+                                        )}
+
+                                        {/* Correlations */}
+                                        {weeklyInsights.correlations && weeklyInsights.correlations.length > 0 && (
+                                            <div className="mt-6 pt-6 border-t border-white/10">
+                                                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Patterns Found</h4>
+                                                <div className="space-y-2">
+                                                    {weeklyInsights.correlations.map((c: any, idx: number) => (
+                                                        <div key={idx} className="p-3 rounded-xl bg-white/5 text-sm">
+                                                            {c.message}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Supermemory Deep Analysis */}
+                                        {weeklyInsights.memoryInsights && weeklyInsights.memoryInsights.hasLongTermData && (
+                                            <div className="mt-6 pt-6 border-t border-white/10">
+                                                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                    <span>🧠</span> AI Memory Recall
+                                                </h4>
+                                                {weeklyInsights.memoryInsights.callback?.message && (
+                                                    <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/10 to-cyan-500/10 border border-primary/20">
+                                                        <p className="text-sm text-white/90 italic">
+                                                            "{weeklyInsights.memoryInsights.callback.message}"
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {weeklyInsights.memoryInsights.historicalContext && weeklyInsights.memoryInsights.historicalContext.length > 0 && (
+                                                    <div className="mt-3 space-y-2">
+                                                        <p className="text-xs text-muted-foreground">Historical patterns:</p>
+                                                        {weeklyInsights.memoryInsights.historicalContext.map((ctx: string, idx: number) => (
+                                                            <div key={idx} className="p-3 rounded-xl bg-white/5 text-xs text-muted-foreground">
+                                                                {ctx}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             ) : (
-                                <div className="text-center py-12 text-muted-foreground">
-                                    Unable to generate insights at this time.
+                                <div className="text-center py-12">
+                                    {weeklyInsights?.hasEnoughData === false ? (
+                                        <>
+                                            <span className="text-4xl block mb-3">📊</span>
+                                            <p className="text-lg font-medium text-white mb-2">Not Enough Data</p>
+                                            <p className="text-muted-foreground">{weeklyInsights?.message || 'Need at least 3 days of data for AI insights'}</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-4xl block mb-3">🤔</span>
+                                            <p className="text-muted-foreground">Unable to generate insights at this time.</p>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -271,7 +368,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 

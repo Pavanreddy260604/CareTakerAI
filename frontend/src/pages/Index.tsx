@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { FocusTimer } from "@/components/FocusTimer";
-import { BiologicalStatus } from "@/components/BiologicalStatus";
 import TacticalHistory from "@/components/TacticalHistory";
 import Achievements from "@/components/Achievements";
 import GoalSettings from "@/components/GoalSettings";
@@ -208,15 +207,7 @@ const Index = () => {
           onSettingsClick={() => setShowGoals(true)}
         />
 
-        {/* NotificationControl removed per user request */}
-
-        {/* Biological Status Panel (RESTORED) */}
-        {bioMetrics && (
-          <BiologicalStatus metrics={{
-            ...bioMetrics,
-            systemMode: isRecoveryMode ? 'LOCKED_RECOVERY' : operatingMode
-          }} />
-        )}
+        {/* BiologicalStatus moved to Settings */}
 
         {/* Recovery Mode Tasks (shows only in recovery) */}
         {isRecoveryMode && (
@@ -230,19 +221,39 @@ const Index = () => {
           <div className="col-span-2 md:col-span-2 row-span-2 bento-card p-6 bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
             <div className="flex flex-col h-full justify-between">
               <div>
-                <span className="pill pill-ok mb-4">Today's Focus</span>
-                <h2 className="text-3xl md:text-4xl font-display font-medium leading-tight mb-2">
-                  {aiResponse?.action || "hydrate &"} <br />
-                  <span className="text-gradient-teal">{aiResponse?.focus || "Recharge."}</span>
-                </h2>
-                <p className="text-muted-foreground font-sans">
-                  {aiResponse?.explanation || "Your energy is stable. Drinking water now will boost your evening clarity."}
-                </p>
+                <span className="pill pill-ok mb-4">{aiResponse ? "AI Insight" : "Check-in"}</span>
+
+                {aiResponse ? (
+                  <>
+                    <h2 className="text-3xl md:text-4xl font-display font-medium leading-tight mb-2">
+                      {aiResponse.action || "Continue"} <br />
+                      <span className="text-gradient-teal">{aiResponse.focus || "your flow."}</span>
+                    </h2>
+                    <p className="text-muted-foreground font-sans">
+                      {aiResponse.explanation}
+                    </p>
+                    {aiResponse.metrics?.capacity && (
+                      <p className="text-xs text-primary mt-2 font-mono">
+                        Capacity: {aiResponse.metrics.capacity}% | Confidence: {Math.round((aiResponse.metrics?.confidence || 0) * 100)}%
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-3xl md:text-4xl font-display font-medium leading-tight mb-2">
+                      Log your <br />
+                      <span className="text-gradient-teal">wellness data</span>
+                    </h2>
+                    <p className="text-muted-foreground font-sans">
+                      Tap the categories below to record your daily inputs, then complete check-in for AI-powered insights.
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="mt-6 flex justify-end">
                 <button onClick={performCheckIn} disabled={isLoading} className="btn-primary w-full md:w-auto">
-                  {isLoading ? "Syncing..." : "Complete Check-in"}
+                  {isLoading ? "Analyzing..." : aiResponse ? "Update Check-in" : "Complete Check-in"}
                 </button>
               </div>
             </div>

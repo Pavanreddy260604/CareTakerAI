@@ -1,12 +1,21 @@
 /**
  * backend/src/services/insightsService.js
- * Weekly Insights & Pattern Detection
+ * Weekly Insights & Pattern Detection with Supermemory + Gemini AI Integration
  */
 const HealthLog = require('../models/HealthLog');
 const User = require('../models/User');
+const { queryMemory, getMemoryCallback } = require('./memoryService');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize Gemini for Deep Analysis
+let geminiModel = null;
+if (process.env.GEMINI_API_KEY) {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+}
 
 /**
- * Generate weekly summary with insights
+ * Generate weekly summary with insights + Supermemory deep analysis
  */
 async function generateWeeklySummary(userId) {
     try {
@@ -27,6 +36,42 @@ async function generateWeeklySummary(userId) {
             };
         }
 
+        // Get current state for memory recall
+        const currentHealth = logs[0]?.health || {};
+
+        // Fetch long-term memory insights from Supermemory
+        let memoryInsights = null;
+        try {
+            const memoryCallback = await getMemoryCallback(userId, currentHealth);
+            const historicalPatterns = await queryMemory('patterns stress sleep exercise', userId, 5);
+
+            if (memoryCallback || historicalPatterns.length > 0) {
+                memoryInsights = {
+                    callback: memoryCallback,
+                    historicalContext: historicalPatterns.slice(0, 3),
+                    hasLongTermData: !memoryCallback?.isNewUser
+                };
+            }
+        } catch (memError) {
+            console.error('Memory fetch error (non-fatal):', memError.message);
+        }
+
+        // Calculate base metrics
+        const overview = calculateOverview(logs);
+        const patterns = detectPatterns(logs);
+        const correlations = findCorrelations(logs);
+        const ruleBasedRecs = generateRecommendations(logs);
+
+        // Generate AI-powered recommendations if Gemini is available
+        let aiRecommendations = null;
+        if (geminiModel && logs.length >= 3) {
+            try {
+                aiRecommendations = await generateAIRecommendations(overview, patterns, correlations, memoryInsights);
+            } catch (aiError) {
+                console.error('AI recommendations error (non-fatal):', aiError.message);
+            }
+        }
+
         // Calculate metrics
         const summary = {
             hasEnoughData: true,
@@ -35,14 +80,18 @@ async function generateWeeklySummary(userId) {
                 end: new Date().toISOString().split('T')[0],
                 daysLogged: logs.length
             },
-            overview: calculateOverview(logs),
+            overview: overview,
             bestDay: findBestDay(logs),
             worstDay: findWorstDay(logs),
-            patterns: detectPatterns(logs),
+            patterns: patterns,
             dayOfWeekAnalysis: analyzeDayOfWeek(logs),
-            correlations: findCorrelations(logs),
-            recommendations: generateRecommendations(logs),
-            progressVsLastWeek: null // Would need previous week data
+            correlations: correlations,
+            recommendations: aiRecommendations || ruleBasedRecs, // Prefer AI recs
+            ruleBasedRecommendations: ruleBasedRecs,
+            progressVsLastWeek: null,
+            // Supermemory deep analysis
+            memoryInsights: memoryInsights,
+            aiPowered: !!aiRecommendations
         };
 
         return summary;
@@ -478,6 +527,58 @@ async function getMonthlyTrends(userId) {
     } catch (error) {
         console.error('Monthly trends error:', error);
         return { hasEnoughData: false, error: error.message };
+    }
+}
+
+/**
+ * Generate AI-powered recommendations using Gemini
+ */
+async function generateAIRecommendations(overview, patterns, correlations, memoryInsights) {
+    if (!geminiModel) return null;
+
+    const prompt = `You are a wellness coach AI. Based on the following weekly health data, provide 2-4 specific, actionable recommendations.
+
+WEEKLY DATA:
+- Average Capacity: ${overview.avgCapacity || 'N/A'}%
+- Sleep Quality Rate: ${overview.sleepQualityRate}%
+- Hydration Rate: ${overview.hydrationRate}%
+- Exercise Rate: ${overview.exerciseRate}%
+- High Stress Rate: ${overview.stressRate}%
+- Total Check-ins: ${overview.totalCheckIns}
+
+DETECTED PATTERNS:
+${patterns.map(p => `- ${p.category}: ${p.message} (${p.severity})`).join('\n') || 'No significant patterns'}
+
+CORRELATIONS FOUND:
+${correlations.map(c => `- ${c.factor}: ${c.message}`).join('\n') || 'No significant correlations'}
+
+${memoryInsights?.callback?.message ? `HISTORICAL CONTEXT: ${memoryInsights.callback.message}` : ''}
+
+Respond ONLY with a JSON array of recommendations. Each recommendation must have:
+- priority: "high" | "medium" | "low"
+- category: "sleep" | "hydration" | "exercise" | "mental" | "nutrition" | "general"
+- action: A specific actionable task (max 15 words)
+- reason: Why this matters based on their data (1 sentence)
+
+Example format:
+[{"priority":"high","category":"sleep","action":"Set a bedtime alarm for 10:30 PM","reason":"Only 40% good sleep days this week is impacting your capacity."}]`;
+
+    try {
+        const result = await geminiModel.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text().trim();
+
+        // Parse JSON from response
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+            const recommendations = JSON.parse(jsonMatch[0]);
+            console.log('AI generated', recommendations.length, 'recommendations');
+            return recommendations;
+        }
+        return null;
+    } catch (error) {
+        console.error('Gemini recommendations error:', error.message);
+        return null;
     }
 }
 

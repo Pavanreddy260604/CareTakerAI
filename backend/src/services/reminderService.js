@@ -1,9 +1,17 @@
 /**
  * backend/src/services/reminderService.js
- * Smart Check-in Reminders & Notification Logic
+ * Smart Check-in Reminders, Achievements & Notification Logic with AI
  */
 const User = require('../models/User');
 const HealthLog = require('../models/HealthLog');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize Gemini for AI messages
+let geminiModel = null;
+if (process.env.GEMINI_API_KEY) {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+}
 
 /**
  * Get smart reminder data for a user
@@ -358,11 +366,187 @@ async function getUserAchievements(userId) {
             });
         }
 
-        return achievements;
+        // Generate AI motivational message if user has achievements
+        let aiMotivation = null;
+        if (geminiModel && achievements.length > 0) {
+            try {
+                aiMotivation = await generateAIMotivation(achievements, streakData);
+            } catch (e) {
+                console.error('AI motivation error (non-fatal):', e.message);
+            }
+        }
+
+        return {
+            badges: achievements,
+            aiMotivation: aiMotivation,
+            stats: {
+                totalLogged: logs.length,
+                streak: streakData.current,
+                exerciseDays,
+                goodSleepDays,
+                goodHydrationDays,
+                highCapacityDays
+            }
+        };
 
     } catch (error) {
         console.error('Achievements error:', error);
-        return [];
+        return { badges: [], aiMotivation: null, stats: {} };
+    }
+}
+
+/**
+ * Generate AI motivational message for achievements
+ */
+async function generateAIMotivation(achievements, streakData) {
+    if (!geminiModel) return null;
+
+    const prompt = `You are a supportive wellness coach. Generate a short, personalized motivational message (2-3 sentences max) for a user who has earned these achievements:
+
+EARNED BADGES: ${achievements.map(a => a.name).join(', ')}
+CURRENT STREAK: ${streakData.current} days
+LONGEST STREAK: ${streakData.longest} days
+
+Be warm, encouraging, and specific to their achievements. Don't be generic. Respond with just the message, no quotes or extra formatting.`;
+
+    try {
+        const result = await geminiModel.generateContent(prompt);
+        const response = await result.response;
+        return response.text().trim();
+    } catch (error) {
+        console.error('Gemini motivation error:', error.message);
+        return null;
+    }
+}
+
+/**
+ * Generate AI-suggested goals based on user's patterns
+ */
+async function generateAIGoalSuggestions(userId) {
+    if (!geminiModel) return null;
+
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const logs = await HealthLog.find({
+            userId,
+            date: { $gte: thirtyDaysAgo }
+        });
+
+        if (logs.length < 7) {
+            return { hasEnoughData: false, message: 'Need at least 7 days of data for AI goal suggestions' };
+        }
+
+        // Calculate current averages
+        const sleepOkDays = logs.filter(l => l.health?.sleep === 'OK').length;
+        const waterOkDays = logs.filter(l => l.health?.water === 'OK').length;
+        const exerciseDays = logs.filter(l => l.health?.exercise === 'DONE').length;
+        const totalDays = logs.length;
+
+        const sleepRate = Math.round((sleepOkDays / totalDays) * 100);
+        const waterRate = Math.round((waterOkDays / totalDays) * 100);
+        const exerciseRate = Math.round((exerciseDays / totalDays) * 100);
+
+        const prompt = `You are a wellness coach AI. Based on this user's 30-day data, suggest optimal personalized health goals.
+
+CURRENT PERFORMANCE (last ${totalDays} days):
+- Good sleep days: ${sleepOkDays}/${totalDays} (${sleepRate}%)
+- Good hydration days: ${waterOkDays}/${totalDays} (${waterRate}%)
+- Exercise days: ${exerciseDays}/${totalDays} (${exerciseRate}%)
+
+Suggest realistic, achievable goals that are slightly challenging but not overwhelming.
+
+Respond ONLY with a JSON object:
+{
+  "targetSleepHours": number (7-9),
+  "targetWaterLiters": number (1.5-3.5),
+  "targetExerciseDays": number (2-6 per week),
+  "explanation": "Brief explanation of why these targets (1-2 sentences)"
+}`;
+
+        const result = await geminiModel.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text().trim();
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const suggestions = JSON.parse(jsonMatch[0]);
+            return {
+                hasEnoughData: true,
+                suggestions: suggestions,
+                currentStats: { sleepRate, waterRate, exerciseRate, totalDays }
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('AI goal suggestions error:', error.message);
+        return null;
+    }
+}
+
+/**
+ * Generate AI trend analysis summary
+ */
+async function generateAITrendAnalysis(userId) {
+    if (!geminiModel) return null;
+
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const logs = await HealthLog.find({
+            userId,
+            date: { $gte: thirtyDaysAgo }
+        }).sort({ date: 1 });
+
+        if (logs.length < 7) {
+            return { hasEnoughData: false };
+        }
+
+        // Split into weeks
+        const weeks = [];
+        for (let i = 0; i < 4; i++) {
+            const weekLogs = logs.slice(i * 7, (i + 1) * 7);
+            if (weekLogs.length > 0) {
+                const avgCapacity = weekLogs.reduce((sum, l) =>
+                    sum + (l.aiResponse?.metrics?.capacity || 0), 0) / weekLogs.length;
+                weeks.push({ week: i + 1, avgCapacity: Math.round(avgCapacity), days: weekLogs.length });
+            }
+        }
+
+        const prompt = `You are a wellness analyst AI. Analyze this user's 30-day capacity trend and provide insights.
+
+WEEKLY CAPACITY DATA:
+${weeks.map(w => `Week ${w.week}: ${w.avgCapacity}% avg (${w.days} days logged)`).join('\n')}
+
+Provide a brief, insightful analysis (3-4 sentences max) that:
+1. Identifies the overall trend (improving, stable, declining)
+2. Points out any notable patterns
+3. Gives one actionable suggestion
+
+Respond with just the analysis text, no formatting.`;
+
+        const result = await geminiModel.generateContent(prompt);
+        const response = await result.response;
+
+        // Determine trend
+        let trend = 'stable';
+        if (weeks.length >= 2) {
+            const diff = weeks[weeks.length - 1].avgCapacity - weeks[0].avgCapacity;
+            if (diff > 10) trend = 'improving';
+            else if (diff < -10) trend = 'declining';
+        }
+
+        return {
+            hasEnoughData: true,
+            weeks: weeks,
+            trend: trend,
+            aiAnalysis: response.text().trim()
+        };
+    } catch (error) {
+        console.error('AI trend analysis error:', error.message);
+        return null;
     }
 }
 
@@ -370,5 +554,7 @@ module.exports = {
     getSmartReminder,
     calculateStreakStatus,
     getTimeOfDayContext,
-    getUserAchievements
+    getUserAchievements,
+    generateAIGoalSuggestions,
+    generateAITrendAnalysis
 };

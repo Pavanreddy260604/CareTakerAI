@@ -24,7 +24,7 @@ const { getEngagementData } = require('./src/services/engagementService');
 const { getFullAnalytics } = require('./src/services/analyticsService');
 const { getBaseline, compareToBaseline, getUserGoals, updateUserGoals, calculateBaseline } = require('./src/services/baselineService');
 const { generateWeeklySummary, getMonthlyTrends } = require('./src/services/insightsService');
-const { getSmartReminder, getUserAchievements, getTimeOfDayContext, calculateStreakStatus } = require('./src/services/reminderService');
+const { getSmartReminder, getUserAchievements, getTimeOfDayContext, calculateStreakStatus, generateAIGoalSuggestions, generateAITrendAnalysis } = require('./src/services/reminderService');
 
 // Middleware
 const authMiddleware = require('./src/middleware/auth');
@@ -730,15 +730,44 @@ app.get('/api/reminder', authMiddleware, async (req, res) => {
     }
 });
 
-// API Endpoint: Get Achievements (PROTECTED)
+// API Endpoint: Get Achievements (PROTECTED) - Now with AI motivation
 app.get('/api/achievements', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
-        const achievements = await getUserAchievements(userId);
-        res.json({ achievements });
+        const result = await getUserAchievements(userId);
+        // Return in format frontend expects
+        res.json({
+            achievements: result.badges || [],
+            aiMotivation: result.aiMotivation,
+            stats: result.stats
+        });
     } catch (error) {
         console.error('Achievements Error:', error);
         res.status(500).json({ error: 'Failed to get achievements' });
+    }
+});
+
+// API Endpoint: Get AI Goal Suggestions (PROTECTED)
+app.get('/api/goals/ai-suggestions', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const suggestions = await generateAIGoalSuggestions(userId);
+        res.json(suggestions || { hasEnoughData: false, message: 'AI not available' });
+    } catch (error) {
+        console.error('AI Goal Suggestions Error:', error);
+        res.status(500).json({ error: 'Failed to get AI suggestions' });
+    }
+});
+
+// API Endpoint: Get AI Trend Analysis (PROTECTED)
+app.get('/api/analytics/ai-trends', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const trends = await generateAITrendAnalysis(userId);
+        res.json(trends || { hasEnoughData: false });
+    } catch (error) {
+        console.error('AI Trend Analysis Error:', error);
+        res.status(500).json({ error: 'Failed to get AI trends' });
     }
 });
 
