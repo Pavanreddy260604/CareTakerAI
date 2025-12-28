@@ -12,6 +12,7 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { RecoveryLock } from "@/components/RecoveryLock";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
+import { BentoCard } from "@/components/ui/BentoCard";
 // New Features
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { FocusTimer } from "@/components/FocusTimer";
@@ -541,7 +542,7 @@ const Index = () => {
         <div className="bento-grid">
 
           {/* 1. HEADER BLOCK (Col Span 2) */}
-          <div className="bento-card col-span-2 p-5 bg-black/60">
+          <BentoCard className="col-span-2">
             <SystemHeader
               dayCount={dayCount}
               isRecoveryMode={isRecoveryMode}
@@ -551,15 +552,15 @@ const Index = () => {
               operatingMode={operatingMode}
               onSettingsClick={() => setShowSettings(true)}
             />
-          </div>
+          </BentoCard>
 
           {/* 2. WEATHER BLOCK (Mobile: Half Width) */}
-          <div className="bento-card p-4 flex flex-col justify-center items-center">
+          <BentoCard className="flex flex-col justify-center items-center">
             <WeatherWidget compact onWeatherUpdate={(w) => setWeatherData(w)} />
-          </div>
+          </BentoCard>
 
           {/* 3. FOCUS / EXPORT (Mobile: Half Width) */}
-          <div className="bento-card p-4 flex flex-col gap-3 justify-center">
+          <BentoCard className="flex flex-col gap-3 justify-center">
             <button
               onClick={() => setShowFocusTimer(true)}
               className="flex items-center justify-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-400 hover:bg-cyan-500/20 transition-all text-xs font-mono w-full"
@@ -574,7 +575,7 @@ const Index = () => {
               <span>📤</span>
               <span>Export</span>
             </button>
-          </div>
+          </BentoCard>
 
           {/* 4. BIOLOGICAL STATUS (Col Span 2) */}
           <div className="bento-card col-span-2 p-1 overflow-visible border-none bg-transparent shadow-none">
