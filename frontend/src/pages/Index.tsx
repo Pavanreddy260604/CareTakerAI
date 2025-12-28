@@ -7,7 +7,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 
 // All Feature Components
-import { WeatherWidget } from "@/components/WeatherWidget";
+
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { FocusTimer } from "@/components/FocusTimer";
 import TacticalHistory from "@/components/TacticalHistory";
@@ -355,10 +355,7 @@ const Index = () => {
             <TacticalHistory />
           </div>
 
-          {/* 5. WEATHER WIDGET (Wide) */}
-          <div className="col-span-2 bento-card p-0 overflow-hidden">
-            <WeatherWidget compact={false} onWeatherUpdate={() => { }} />
-          </div>
+
 
           {/* 6. AI INSIGHT CARD (Wide) - Shows after check-in */}
           {aiResponse && aiResponse.explanation && (
