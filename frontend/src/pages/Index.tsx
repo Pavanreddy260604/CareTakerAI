@@ -77,7 +77,18 @@ const Index = () => {
   const [streak, setStreak] = useState(0);
   const [userName, setUserName] = useState("");
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
-  const [aiResponse, setAiResponse] = useState<{ systemStatus: string; action: string; explanation: string; metrics?: any; memoryCallback?: { message?: string } } | null>(null);
+  const [aiResponse, setAiResponse] = useState<{
+    systemStatus: string;
+    action: string;
+    explanation: string;
+    urgency?: 'low' | 'medium' | 'high' | 'critical';
+    confidence?: number;
+    timeframe?: string;
+    category?: string;
+    metrics?: any;
+    memoryCallback?: { message?: string };
+    trendSummary?: string;
+  } | null>(null);
   const [bioMetrics, setBioMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTaskIndex, setCurrentTaskIndex] = useState(Object.keys(TASK_CATEGORIES).length);
@@ -701,46 +712,76 @@ const Index = () => {
 
         {showHistory && <div className="mb-5 animate-slide-up"><TacticalHistory /></div>}
 
-        {/* AI Response with Severity Levels */}
         {aiResponse && (() => {
           const mode = aiResponse.metrics?.systemMode || aiResponse.systemStatus;
           const capacity = aiResponse.metrics?.capacity || 100;
+          const confidence = aiResponse.confidence || 75;
+          const urgency = aiResponse.urgency || 'medium';
+          const timeframe = aiResponse.timeframe || 'today';
+          const category = aiResponse.category || 'general';
 
           let severity: 'SUGGESTION' | 'WARNING' | 'CRITICAL' = 'SUGGESTION';
           let severityColor = 'border-primary/30 bg-primary/5';
           let badgeColor = 'bg-primary/20 text-primary';
           let icon = '💡';
 
-          if (mode === 'SURVIVAL' || capacity < 20) {
+          if (mode === 'SURVIVAL' || capacity < 20 || urgency === 'critical') {
             severity = 'CRITICAL';
             severityColor = 'border-destructive bg-destructive/10';
             badgeColor = 'bg-destructive text-white';
             icon = '🚨';
-          } else if (mode === 'LOCKED_RECOVERY' || capacity < 45) {
+          } else if (mode === 'LOCKED_RECOVERY' || capacity < 45 || urgency === 'high') {
             severity = 'WARNING';
             severityColor = 'border-yellow-500/50 bg-yellow-500/10';
             badgeColor = 'bg-yellow-500 text-black';
             icon = '⚠️';
           }
 
+          // Confidence color
+          const confidenceColor = confidence >= 80 ? 'text-primary'
+            : confidence >= 60 ? 'text-yellow-500'
+              : 'text-orange-500';
+
           return (
             <div className={`system-card mb-5 ${severityColor} transition-all duration-300 animate-slide-up`}>
-              {/* Severity Badge */}
-              <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
-                <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-full ${badgeColor}`}>
-                  {icon} {severity}
-                </span>
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  CAPACITY: {capacity}%
-                </span>
+              {/* Header with badges */}
+              <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-full ${badgeColor}`}>
+                    {icon} {severity}
+                  </span>
+                  {/* Category Badge */}
+                  <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-muted/30 text-muted-foreground uppercase">
+                    {category}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Confidence Indicator */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground font-mono">CONF:</span>
+                    <span className={`text-sm font-mono font-bold ${confidenceColor}`}>
+                      {confidence}%
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    CAP: {capacity}%
+                  </span>
+                </div>
               </div>
 
               {/* Action */}
               {aiResponse.action && aiResponse.action !== "None" && (
-                <p className={`text-base sm:text-lg font-bold font-mono mb-3 ${severity === 'CRITICAL' ? 'text-destructive' :
+                <p className={`text-base sm:text-lg font-bold font-mono mb-2 ${severity === 'CRITICAL' ? 'text-destructive' :
                   severity === 'WARNING' ? 'text-yellow-500' : 'text-primary'
                   }`}>
                   {aiResponse.action}
+                </p>
+              )}
+
+              {/* Timeframe */}
+              {timeframe && (
+                <p className="text-xs font-mono text-primary/70 mb-3">
+                  ⏰ {timeframe}
                 </p>
               )}
 
@@ -748,6 +789,15 @@ const Index = () => {
               <p className="text-sm font-mono text-muted-foreground leading-relaxed">
                 {aiResponse.explanation}
               </p>
+
+              {/* Trend Summary */}
+              {aiResponse.trendSummary && aiResponse.trendSummary !== 'Using rules-based analysis.' && (
+                <div className="mt-3 p-2 bg-muted/10 rounded-lg">
+                  <p className="text-[10px] font-mono text-muted-foreground">
+                    📈 {aiResponse.trendSummary}
+                  </p>
+                </div>
+              )}
 
               {/* Memory Callback */}
               {aiResponse.memoryCallback?.message && (
@@ -761,16 +811,21 @@ const Index = () => {
                 </div>
               )}
 
-              {/* Severity Legend */}
-              {severity !== 'SUGGESTION' && (
-                <div className="mt-4 pt-3 border-t border-muted/20 text-[10px] font-mono text-muted-foreground/70">
+              {/* Confidence Legend */}
+              <div className="mt-4 pt-3 border-t border-muted/20 flex flex-wrap justify-between items-center gap-2">
+                <div className="text-[10px] font-mono text-muted-foreground/70">
                   {severity === 'CRITICAL' ? (
                     <span>🚨 CRITICAL = Immediate action required</span>
-                  ) : (
+                  ) : severity === 'WARNING' ? (
                     <span>⚠️ WARNING = Recommended action</span>
+                  ) : (
+                    <span>💡 SUGGESTION = Optional improvement</span>
                   )}
                 </div>
-              )}
+                <div className="text-[10px] font-mono text-muted-foreground/50">
+                  {confidence >= 80 ? '✅ High confidence' : confidence >= 60 ? '🟡 Moderate confidence' : '🟠 Learning...'}
+                </div>
+              </div>
             </div>
           );
         })()}
