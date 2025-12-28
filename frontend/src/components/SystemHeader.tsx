@@ -39,7 +39,7 @@ const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", ope
       {/* User greeting and status */}
       <div className="space-y-2">
         {userName && (
-          <p className="text-primary text-sm font-medium truncate">
+          <p className={`${operatingMode === 'CARETAKER' ? 'text-primary' : 'text-blue-500'} text-sm font-medium truncate`}>
             Welcome, {userName}
           </p>
         )}

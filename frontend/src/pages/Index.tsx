@@ -132,12 +132,15 @@ const Index = () => {
 
   const toggleMode = async (mode: 'CARETAKER' | 'OBSERVER') => {
     try {
+      setOperatingMode(mode); // Optimistic update
       await api.updateSettings(mode);
       const stats: any = await api.getUserStats();
       if (stats.metrics) setBioMetrics(stats.metrics);
+      if (stats.mode) setOperatingMode(stats.mode); // Verify with backend source of truth
       toast({ title: "System Reconfigured", description: `Operating Mode: ${mode}` });
     } catch (e) {
       toast({ title: "Error", description: "Failed to update settings", variant: "destructive" });
+      // Revert if failed (optional, but good practice would be to re-fetch stats or revert state)
     }
   };
 
