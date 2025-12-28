@@ -13,91 +13,14 @@ interface VoiceLoggerProps {
     disabled?: boolean;
 }
 
-// Speech Recognition types
-interface SpeechRecognitionEvent {
-    results: SpeechRecognitionResultList;
-    resultIndex: number;
-}
-
-interface SpeechRecognitionResultList {
-    length: number;
-    item(index: number): SpeechRecognitionResult;
-    [index: number]: SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-    isFinal: boolean;
-    length: number;
-    item(index: number): SpeechRecognitionAlternative;
-    [index: number]: SpeechRecognitionAlternative;
-}
-
-interface SpeechRecognitionAlternative {
-    transcript: string;
-    confidence: number;
-}
-
 export function VoiceLogger({ onHealthParsed, disabled }: VoiceLoggerProps) {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [supported, setSupported] = useState(false);
     const recognitionRef = useRef<any>(null);
+    const parseCallbackRef = useRef<((text: string) => void) | null>(null);
     const { toast } = useToast();
-
-    useEffect(() => {
-        // Check for browser support
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            setSupported(true);
-            recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.interimResults = true;
-            recognitionRef.current.lang = 'en-US';
-
-            recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-                let finalTranscript = '';
-                let interimTranscript = '';
-
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript;
-                    } else {
-                        interimTranscript += transcript;
-                    }
-                }
-
-                setTranscript(finalTranscript || interimTranscript);
-
-                if (finalTranscript) {
-                    parseAndSubmit(finalTranscript);
-                }
-            };
-
-            recognitionRef.current.onerror = (event: any) => {
-                console.error('Speech recognition error:', event.error);
-                setIsListening(false);
-                if (event.error === 'not-allowed') {
-                    toast({
-                        title: 'Microphone Access Denied',
-                        description: 'Please allow microphone access to use voice logging.',
-                        variant: 'destructive'
-                    });
-                }
-            };
-
-            recognitionRef.current.onend = () => {
-                setIsListening(false);
-            };
-        }
-
-        return () => {
-            if (recognitionRef.current) {
-                recognitionRef.current.abort();
-            }
-        };
-    }, []);
 
     // Local fallback: Parse natural language into health data
     const parseHealthFromTextLocal = useCallback((text: string) => {
@@ -238,25 +161,123 @@ export function VoiceLogger({ onHealthParsed, disabled }: VoiceLoggerProps) {
         }
     }, [parseHealthFromTextLocal, onHealthParsed, toast]);
 
+    // Store parseAndSubmit in ref so useEffect can access it
+    useEffect(() => {
+        parseCallbackRef.current = parseAndSubmit;
+    }, [parseAndSubmit]);
+
+    // Initialize speech recognition
+    useEffect(() => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            console.log('Speech recognition not supported');
+            return;
+        }
+
+        setSupported(true);
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event: any) => {
+            let finalTranscript = '';
+            let interimTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            setTranscript(finalTranscript || interimTranscript);
+
+            if (finalTranscript && parseCallbackRef.current) {
+                parseCallbackRef.current(finalTranscript);
+            }
+        };
+
+        recognition.onerror = (event: any) => {
+            console.error('Speech recognition error:', event.error);
+            setIsListening(false);
+            if (event.error === 'not-allowed') {
+                toast({
+                    title: 'Microphone Access Denied',
+                    description: 'Please allow microphone access to use voice logging.',
+                    variant: 'destructive'
+                });
+            }
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+
+        return () => {
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.abort();
+                } catch (e) {
+                    // Ignore
+                }
+            }
+        };
+    }, [toast]);
+
     const toggleListening = useCallback(() => {
-        if (!recognitionRef.current) return;
+        if (!recognitionRef.current) {
+            toast({
+                title: 'Voice Not Supported',
+                description: 'Your browser does not support voice input.',
+                variant: 'destructive'
+            });
+            return;
+        }
 
         if (isListening) {
-            recognitionRef.current.stop();
+            try {
+                recognitionRef.current.stop();
+            } catch (e) {
+                console.error('Failed to stop:', e);
+            }
             setIsListening(false);
         } else {
             setTranscript('');
             try {
                 recognitionRef.current.start();
                 setIsListening(true);
-            } catch (e) {
+            } catch (e: any) {
                 console.error('Speech recognition failed to start:', e);
+                toast({
+                    title: 'Voice Start Failed',
+                    description: e.message || 'Could not start voice recognition',
+                    variant: 'destructive'
+                });
             }
         }
-    }, [isListening]);
+    }, [isListening, toast]);
 
     if (!supported) {
-        return null; // Don't show if not supported
+        // Show a disabled button instead of nothing
+        return (
+            <button
+                disabled
+                className="w-14 h-14 rounded-full flex items-center justify-center bg-muted/20 text-muted-foreground opacity-50 cursor-not-allowed"
+                title="Voice not supported in this browser"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                    <line x1="12" x2="12" y1="19" y2="22" />
+                    <line x1="2" x2="22" y1="2" y2="22" />
+                </svg>
+            </button>
+        );
     }
 
     return (
@@ -266,13 +287,13 @@ export function VoiceLogger({ onHealthParsed, disabled }: VoiceLoggerProps) {
                 onClick={toggleListening}
                 disabled={disabled || isProcessing}
                 className={`
-          w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300
-          ${isListening
+                    w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300
+                    ${isListening
                         ? 'bg-destructive text-white animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]'
                         : 'bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 hover:scale-105'
                     }
-          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        `}
+                    ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                `}
                 title={isListening ? 'Stop listening' : 'Voice log'}
             >
                 {isProcessing ? (
