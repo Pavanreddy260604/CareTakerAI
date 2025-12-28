@@ -367,7 +367,7 @@ const Index = () => {
     if (permission !== 'granted' || !bioMetrics?.systemMode) return;
 
     if (bioMetrics.systemMode === 'SURVIVAL' || bioMetrics.systemMode === 'LOCKED_RECOVERY') {
-      notifySurvivalMode();
+      notifySurvivalMode(); // Ensure this function uses new text
     }
   }, [bioMetrics?.systemMode, permission, notifySurvivalMode]);
 
@@ -504,13 +504,15 @@ const Index = () => {
     }
   };
 
+  // PSYCHOLOGY FIX: Renamed 'Integrity' to 'Consistency Score'.
+  // Penalize missing data (PENDING/null), NOT bad health. Reward the act of logging.
   const calculateIntegrity = () => {
     let score = 100;
-    if (healthData.water.status === 'LOW') score -= 15;
-    if (healthData.food.status === 'LOW') score -= 15;
-    if (healthData.sleep.status === 'LOW') score -= 20;
-    if (healthData.mental.status === 'HIGH') score -= 20;
-    if (healthData.exercise.status === 'PENDING') score -= 10;
+    if (healthData.water.status === 'PENDING') score -= 20;
+    if (healthData.food.status === 'PENDING') score -= 20;
+    if (healthData.sleep.status === 'PENDING') score -= 20;
+    if (healthData.mental.status === 'PENDING') score -= 20;
+    if (healthData.exercise.status === 'PENDING') score -= 20;
     return Math.max(0, score);
   };
 
@@ -520,14 +522,14 @@ const Index = () => {
 
       {/* Cooldown Banner */}
       {cooldownActive && (
-        <div className="bg-destructive/10 border-b border-destructive/30 py-3 px-4">
+        <div className="bg-orange-500/10 border-b border-orange-500/30 py-3 px-4">
           <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="text-sm font-mono text-destructive flex items-center gap-2">
-              <span>🔒</span>
-              <span>Check-in locked: {cooldownRemaining} remaining</span>
+            <p className="text-sm font-mono text-orange-500 flex items-center gap-2">
+              <span>🔋</span>
+              <span>System Recharging: {cooldownRemaining} remaining</span>
             </p>
             <p className="text-[10px] text-muted-foreground">
-              SURVIVAL warning dismissed
+              Rest Mode Active
             </p>
           </div>
         </div>
