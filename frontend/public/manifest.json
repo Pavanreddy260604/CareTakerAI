@@ -19,5 +19,45 @@
         "health",
         "lifestyle",
         "productivity"
-    ]
+    ],
+    "shortcuts": [
+        {
+            "name": "Check In",
+            "short_name": "Check In",
+            "description": "Log your daily health status",
+            "url": "/",
+            "icons": [
+                {
+                    "src": "/favicon.svg",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Focus Mode",
+            "short_name": "Focus",
+            "description": "Start a deep work focus session",
+            "url": "/?focus=true",
+            "icons": [
+                {
+                    "src": "/favicon.svg",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Analytics",
+            "short_name": "Stats",
+            "description": "View your health trends",
+            "url": "/?analytics=true",
+            "icons": [
+                {
+                    "src": "/favicon.svg",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false
 }

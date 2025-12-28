@@ -12,6 +12,11 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { RecoveryLock } from "@/components/RecoveryLock";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
+// New Features
+import { VoiceLogger } from "@/components/VoiceLogger";
+import { WeatherWidget } from "@/components/WeatherWidget";
+import { FocusTimer } from "@/components/FocusTimer";
+import { DataExport } from "@/components/DataExport";
 
 // Task categories that map to health status
 const TASK_CATEGORIES = {
@@ -88,6 +93,10 @@ const Index = () => {
   const [reflection, setReflection] = useState({ wentWell: '', drained: '', experiment: '' });
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
   const [nextCycleTime, setNextCycleTime] = useState('');
+  // New feature states
+  const [showFocusTimer, setShowFocusTimer] = useState(false);
+  const [showDataExport, setShowDataExport] = useState(false);
+  const [weatherData, setWeatherData] = useState<any>(null);
 
   // Engagement state
   const [engagement, setEngagement] = useState<{
@@ -222,6 +231,20 @@ const Index = () => {
     };
     fetchEngagement();
   }, [navigate]);
+
+  // Handle URL parameters for PWA shortcuts
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('focus') === 'true') {
+      setShowFocusTimer(true);
+      // Clean URL without reloading
+      window.history.replaceState({}, '', '/');
+    }
+    if (urlParams.get('analytics') === 'true') {
+      setShowAnalytics(true);
+      window.history.replaceState({}, '', '/');
+    }
+  }, []);
 
   // Live countdown timer for next cycle
   useEffect(() => {
@@ -477,7 +500,7 @@ const Index = () => {
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-6">
         {/* Header Row */}
-        <div className="flex justify-between items-start gap-4 mb-6">
+        <div className="flex justify-between items-start gap-4 mb-4">
           <SystemHeader
             dayCount={dayCount}
             isRecoveryMode={isRecoveryMode}
@@ -486,12 +509,50 @@ const Index = () => {
             integrity={calculateIntegrity()}
             onSettingsClick={() => setShowSettings(true)}
           />
-          <button
-            onClick={handleLogout}
-            className="text-xs font-mono text-muted-foreground hover:text-destructive transition-colors px-3 py-2 border border-transparent hover:border-destructive/50 rounded-lg shrink-0"
-          >
-            [LOGOUT]
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLogout}
+              className="text-xs font-mono text-muted-foreground hover:text-destructive transition-colors px-3 py-2 border border-transparent hover:border-destructive/50 rounded-lg shrink-0"
+            >
+              [LOGOUT]
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Actions Row */}
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <WeatherWidget compact onWeatherUpdate={(w) => setWeatherData(w)} />
+          <div className="flex items-center gap-2">
+            {/* Focus Timer Button */}
+            <button
+              onClick={() => setShowFocusTimer(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-400 hover:bg-cyan-500/20 transition-all text-xs font-mono"
+            >
+              <span>🧘</span>
+              <span className="hidden sm:inline">Focus</span>
+            </button>
+            {/* Data Export Button */}
+            <button
+              onClick={() => setShowDataExport(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/30 rounded-xl text-primary hover:bg-primary/20 transition-all text-xs font-mono"
+            >
+              <span>📤</span>
+              <span className="hidden sm:inline">Export</span>
+            </button>
+            {/* Voice Logger */}
+            <VoiceLogger
+              disabled={todayCheckedIn || isLoading}
+              onHealthParsed={(health) => {
+                // Apply parsed health data using handleLogCategory
+                if (health.water) handleLogCategory('water', health.water === 'OK' ? 'hydrated' : 'none', health.water);
+                if (health.food) handleLogCategory('food', health.food === 'OK' ? 'full' : 'none', health.food);
+                if (health.sleep) handleLogCategory('sleep', health.sleep === 'OK' ? 'good' : 'bad', health.sleep);
+                if (health.exercise) handleLogCategory('exercise', health.exercise === 'DONE' ? 'done' : 'skipped', health.exercise);
+                if (health.mentalLoad) handleLogCategory('mental', health.mentalLoad === 'LOW' ? 'light' : health.mentalLoad === 'OK' ? 'moderate' : 'heavy', health.mentalLoad);
+                toast({ title: '🎙️ Voice Log Applied', description: 'Health data updated from speech.' });
+              }}
+            />
+          </div>
         </div>
 
         {/* Biological Status - Full Width */}
@@ -1051,6 +1112,25 @@ const Index = () => {
           });
         }}
       />
+
+      {/* Focus Timer Modal */}
+      {showFocusTimer && (
+        <FocusTimer
+          onClose={() => setShowFocusTimer(false)}
+          onSessionComplete={(duration) => {
+            // Could update mental load or trigger check-in
+            toast({
+              title: '🧘 Focus Session Complete',
+              description: `Great work! ${Math.round(duration / 60)} minutes of deep focus.`
+            });
+          }}
+        />
+      )}
+
+      {/* Data Export Modal */}
+      {showDataExport && (
+        <DataExport onClose={() => setShowDataExport(false)} />
+      )}
     </div>
   );
 };
