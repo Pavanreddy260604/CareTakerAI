@@ -1,0 +1,24 @@
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+[36mvite v5.4.19 [32mbuilding for production...[36m[39m
+transforming...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[32m✓[39m 154 modules transformed.
+[31mx[39m Build failed in 2.14s
+[31merror during build:
+[31m[vite:css] [postcss] P:/New folder/New folder (2)/frontend/src/index.css:136:5: The `hover:shadow-[0_0_20px_rgba(45,` class does not exist. If `hover:shadow-[0_0_20px_rgba(45,` is a custom class, make sure it is defined within a `@layer` directive.[31m
+file: [36mP:/New folder/New folder (2)/frontend/src/index.css:136:4[31m
+    at Input.error (P:\New folder\New folder (2)\frontend\node_modules\postcss\lib\input.js:135:16)
+    at AtRule.error (P:\New folder\New folder (2)\frontend\node_modules\postcss\lib\node.js:146:32)
+    at processApply (P:\New folder\New folder (2)\frontend\node_modules\tailwindcss\lib\lib\expandApplyAtRules.js:380:29)
+    at P:\New folder\New folder (2)\frontend\node_modules\tailwindcss\lib\lib\expandApplyAtRules.js:551:9
+    at P:\New folder\New folder (2)\frontend\node_modules\tailwindcss\lib\processTailwindFeatures.js:55:50
+    at async plugins (P:\New folder\New folder (2)\frontend\node_modules\tailwindcss\lib\plugin.js:38:17)
+    at async LazyResult.runAsync (P:\New folder\New folder (2)\frontend\node_modules\postcss\lib\lazy-result.js:293:11)
+    at async compileCSS (file:///P:/New%20folder/New%20folder%20(2)/frontend/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:36898:21)
+    at async Object.transform (file:///P:/New%20folder/New%20folder%20(2)/frontend/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:36171:11)
+    at async transform (file:///P:/New%20folder/New%20folder%20(2)/frontend/node_modules/rollup/dist/es/shared/node-entry.js:19581:16)[39m

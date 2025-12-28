@@ -1,4 +1,7 @@
-@import "@fontsource-variable/inter";
+/* Updated Design System v2 */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
 @import "@fontsource/outfit/400.css";
 @import "@fontsource/outfit/500.css";
 @import "@fontsource/outfit/700.css";
@@ -131,7 +134,7 @@
 
   /* Modern Button Styles - "Squaryles" */
   .btn-primary {
-    @apply bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(45, 212, 191, 0.3)] hover:scale-[1.02] active:scale-[0.98];
+    @apply bg-primary text-primary-foreground font-bold px-6 py-3 rounded-2xl transition-all duration-300 shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.02] active:scale-[0.98];
   }
 
   .btn-glass {
