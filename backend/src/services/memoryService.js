@@ -183,13 +183,14 @@ async function getMemoryCallback(userId, currentState) {
     const topMemory = memories[0];
     if (!topMemory.content) return null;
 
-    // Extract useful info from memory content
-    const match = topMemory.content.match(/Date: ([^|]+)\|.*Capacity: (\d+)%.*Action: ([^|]+)/);
+    // Extract useful info from memory content - Relaxed regex to handle N/A capacity
+    const match = topMemory.content.match(/Date: ([^|]+)\|.*Capacity: ([^%]+)%.*Action: ([^|]+)/);
 
     if (match) {
+        const capacityVal = parseInt(match[2]);
         const callback = {
             date: match[1].trim(),
-            capacity: parseInt(match[2]),
+            capacity: isNaN(capacityVal) ? null : capacityVal,
             action: match[3].trim(),
             message: `Last time you felt like this (${match[1].trim()}), your capacity was ${match[2]}% and the recommended action was: ${match[3].trim()}`
         };
@@ -256,7 +257,7 @@ async function queryMemory(query, userId, limit = 3) {
             return response.results.map((r, i) => {
                 const text = extractContent(r);
                 if (!text || typeof text !== 'string' || text.trim().length === 0) {
-                    return `[Unparseable Memory] ${JSON.stringify(r).substring(0, 50)}...`;
+                    return `Memory record ${i + 1}`;
                 }
                 return text;
             });
