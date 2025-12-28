@@ -197,8 +197,8 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                         <h3 className="text-lg font-display font-medium">AI Trend Analysis</h3>
                                         <span className="px-2 py-0.5 text-[10px] font-bold bg-cyan-500/20 text-cyan-400 rounded-full">🤖 AI POWERED</span>
                                         <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${aiTrendAnalysis.trend === 'improving' ? 'bg-emerald-500/20 text-emerald-400' :
-                                                aiTrendAnalysis.trend === 'declining' ? 'bg-red-500/20 text-red-400' :
-                                                    'bg-amber-500/20 text-amber-400'
+                                            aiTrendAnalysis.trend === 'declining' ? 'bg-red-500/20 text-red-400' :
+                                                'bg-amber-500/20 text-amber-400'
                                             }`}>
                                             {aiTrendAnalysis.trend === 'improving' ? '📈 Improving' :
                                                 aiTrendAnalysis.trend === 'declining' ? '📉 Declining' : '➡️ Stable'}
@@ -321,7 +321,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                         )}
 
                                         {/* Supermemory Deep Analysis */}
-                                        {weeklyInsights.memoryInsights && weeklyInsights.memoryInsights.hasLongTermData && (
+                                        {weeklyInsights.memoryInsights && (weeklyInsights.memoryInsights.callback?.message || (weeklyInsights.memoryInsights.historicalContext?.length > 0)) && (
                                             <div className="mt-6 pt-6 border-t border-white/10">
                                                 <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
                                                     <span>🧠</span> AI Memory Recall
@@ -338,7 +338,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                                         <p className="text-xs text-muted-foreground">Historical patterns:</p>
                                                         {weeklyInsights.memoryInsights.historicalContext.map((ctx: string, idx: number) => (
                                                             <div key={idx} className="p-3 rounded-xl bg-white/5 text-xs text-muted-foreground">
-                                                                {ctx}
+                                                                {typeof ctx === 'string' ? ctx : JSON.stringify(ctx)}
                                                             </div>
                                                         ))}
                                                     </div>

@@ -121,11 +121,13 @@ const TacticalHistory = () => {
     }
 
     return (
-        <div className="system-card border-dashed">
-            <p className="system-text text-muted-foreground mb-4">TACTICAL OVERVIEW (LAST 7 DAYS)</p>
+        <div className="system-card border-dashed p-4">
+            <p className="system-text text-muted-foreground mb-4 text-xs sm:text-sm truncate">
+                TACTICAL OVERVIEW (LAST 7 DAYS)
+            </p>
 
             {/* Integrity Graph Chart */}
-            <div className="mb-6 h-28 sm:h-32 flex items-end justify-between gap-1 sm:gap-2 px-1 border-b border-border pb-3">
+            <div className="mb-6 h-28 sm:h-32 flex items-end justify-between gap-1 sm:gap-2 border-b border-border pb-3">
                 {logs.map((log, i) => {
                     const score = calculateDailyScore(log);
                     const height = `${Math.max(8, score)}%`;
