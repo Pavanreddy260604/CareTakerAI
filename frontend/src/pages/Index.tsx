@@ -204,7 +204,8 @@ const Index = () => {
 
       } catch (error: any) {
         console.error("Failed to fetch stats:", error);
-        if (error.message.includes('authenticated')) {
+        const errorMsg = error?.message || 'Unknown error';
+        if (typeof errorMsg === 'string' && errorMsg.includes('authenticated')) {
           navigate('/login');
         }
       }

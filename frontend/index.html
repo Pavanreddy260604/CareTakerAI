@@ -27,10 +27,36 @@
   <meta property="og:type" content="website" />
 
   <meta name="twitter:card" content="summary" />
+  <script>
+    // Global Error Handler for Mobile Debugging
+    window.onerror = function (msg, url, line, col, error) {
+      document.getElementById('root').innerHTML = `
+        <div style="color: #ef4444; padding: 20px; font-family: monospace; background: #000;">
+          <h1 style="font-size: 16px;">CRITICAL SYSTEM FAIL</h1>
+          <p><strong>Error:</strong> ${msg}</p>
+          <p><strong>Location:</strong> ${url}:${line}:${col}</p>
+          <pre style="white-space: pre-wrap; font-size: 10px; opacity: 0.7;">${error?.stack || 'No stack trace'}</pre>
+        </div>
+      `;
+      return false;
+    };
+
+    window.onunhandledrejection = function (event) {
+      window.onerror(event.reason?.message || event.reason, 'Promise', 0, 0, event.reason);
+    };
+  </script>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div
+      style="display: flex; height: 100vh; align-items: center; justify-content: center; background: #0a0a0a; color: #22c55e; font-family: monospace;">
+      <div style="text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 10px;">⚡</div>
+        <div>SYSTEM INITIALIZING...</div>
+      </div>
+    </div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 
   <!-- Service Worker Registration -->

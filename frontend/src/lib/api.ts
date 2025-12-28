@@ -1,5 +1,15 @@
 // API Configuration - Uses env var for production, defaults to localhost for dev
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const getBaseUrl = () => {
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    // If running on a network IP (mobile testing), use that IP instead of localhost
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:3000/api';
+    }
+    return `http://${hostname}:3000/api`;
+};
+
+const API_BASE_URL = getBaseUrl();
 
 // Session expired event - custom event for handling token expiration
 const SESSION_EXPIRED_EVENT = 'session-expired';
