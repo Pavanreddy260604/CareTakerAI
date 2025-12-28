@@ -24,9 +24,19 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
     const [sessionsCompleted, setSessionsCompleted] = useState(0);
     const [totalFocusTime, setTotalFocusTime] = useState(0);
     const [weeklyStats, setWeeklyStats] = useState<{ totalSessions: number; totalMinutes: number } | null>(null);
+
+    // Refs for interval and state access inside interval
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const startTimeRef = useRef<number>(0);
+    const sessionsRef = useRef(sessionsCompleted);
+    const totalTimeRef = useRef(totalFocusTime);
+
     const { toast } = useToast();
+
+    // Sync refs with state
+    useEffect(() => {
+        sessionsRef.current = sessionsCompleted;
+        totalTimeRef.current = totalFocusTime;
+    }, [sessionsCompleted, totalFocusTime]);
 
     // Load saved stats
     useEffect(() => {
@@ -67,15 +77,17 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
         }
     }, []);
 
-    // REAL-TIME LIVE COUNTDOWN
+    // REAL-TIME COUNTDOWN WITH TARGET TIME LOGIC
     useEffect(() => {
         if (state === 'focus' || state === 'break') {
-            startTimeRef.current = Date.now();
-            const initialRemaining = timeRemaining;
+            const now = Date.now();
+            // Calculate absolute target end time
+            const targetTime = now + (timeRemaining * 1000);
 
             intervalRef.current = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
-                const newRemaining = Math.max(0, initialRemaining - elapsed);
+                const currentTime = Date.now();
+                const secondsLeft = Math.ceil((targetTime - currentTime) / 1000);
+                const newRemaining = Math.max(0, secondsLeft);
 
                 setTimeRemaining(newRemaining);
 
@@ -83,18 +95,18 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
                     if (intervalRef.current) clearInterval(intervalRef.current);
 
                     if (state === 'focus') {
-                        const focusDuration = selectedDuration;
-                        const newSessions = sessionsCompleted + 1;
-                        const newTotalTime = totalFocusTime + focusDuration;
+                        // Use refs to get current values without stale closures
+                        const newSessions = sessionsRef.current + 1;
+                        const newTotal = totalTimeRef.current + selectedDuration;
 
                         setSessionsCompleted(newSessions);
-                        setTotalFocusTime(newTotalTime);
-                        saveStats(newSessions, newTotalTime, focusDuration);
-                        onSessionComplete?.(focusDuration);
+                        setTotalFocusTime(newTotal);
+                        saveStats(newSessions, newTotal, selectedDuration);
+                        onSessionComplete?.(selectedDuration);
 
                         if ('Notification' in window && Notification.permission === 'granted') {
                             new Notification('🎉 Focus Complete!', {
-                                body: `${focusDuration / 60} min done!`,
+                                body: `${selectedDuration / 60} min done!`,
                                 icon: '/favicon.svg'
                             });
                         }
@@ -115,13 +127,13 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
                         setTimeRemaining(selectedDuration);
                     }
                 }
-            }, 100);
-
-            return () => {
-                if (intervalRef.current) clearInterval(intervalRef.current);
-            };
+            }, 100); // Check every 100ms for responsiveness
         }
-    }, [state, selectedDuration, sessionsCompleted, totalFocusTime, onSessionComplete, saveStats, toast]);
+
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
+    }, [state, selectedDuration]); // Minimal dependencies to ensure stability
 
     const startFocus = useCallback(() => {
         setTimeRemaining(selectedDuration);
@@ -131,7 +143,6 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
 
     const pauseResume = useCallback(() => {
         if (state === 'focus') {
-            if (intervalRef.current) clearInterval(intervalRef.current);
             setState('paused');
         } else if (state === 'paused') {
             setState('focus');
@@ -139,7 +150,6 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
     }, [state]);
 
     const stopTimer = useCallback(() => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
         if ((state === 'focus' || state === 'paused') && selectedDuration - timeRemaining > 60) {
             const elapsed = selectedDuration - timeRemaining;
             setTotalFocusTime(t => t + elapsed);
@@ -150,15 +160,11 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
         setTimeRemaining(selectedDuration);
     }, [state, selectedDuration, timeRemaining, totalFocusTime, sessionsCompleted, saveStats, toast]);
 
-    // Format time
+    // UI Helpers
     const minutes = Math.floor(timeRemaining / 60);
     const seconds = timeRemaining % 60;
-
-    // Progress percentage
     const total = state === 'break' ? BREAK_DURATION : selectedDuration;
     const progress = ((total - timeRemaining) / total) * 100;
-
-    // Circle calculation
     const circumference = 2 * Math.PI * 120;
     const strokeDashoffset = circumference * (1 - progress / 100);
 
@@ -190,7 +196,6 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
 
                     {/* Center - LIVE COUNTDOWN */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        {/* Big Minutes : Seconds Display */}
                         <div className="flex items-baseline gap-1">
                             <span className={`text-6xl sm:text-7xl font-mono font-bold tabular-nums ${state === 'break' ? 'text-cyan-500' :
                                 state === 'focus' ? 'text-primary' :
