@@ -12,7 +12,6 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { RecoveryLock } from "@/components/RecoveryLock";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
-import { BentoCard } from "@/components/ui/BentoCard";
 // New Features
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { FocusTimer } from "@/components/FocusTimer";
@@ -95,7 +94,7 @@ const Index = () => {
   } | null>(null);
   const [bioMetrics, setBioMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(Object.keys(TASK_CATEGORIES).length);
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showWeeklyReview, setShowWeeklyReview] = useState(false);
@@ -232,7 +231,7 @@ const Index = () => {
           }
         } else {
           setTodayCheckedIn(false);
-          setCurrentTaskIndex(0);
+          setCurrentTaskIndex(categories.length);
         }
 
       } catch (error: any) {
@@ -368,7 +367,7 @@ const Index = () => {
     if (permission !== 'granted' || !bioMetrics?.systemMode) return;
 
     if (bioMetrics.systemMode === 'SURVIVAL' || bioMetrics.systemMode === 'LOCKED_RECOVERY') {
-      notifySurvivalMode(); // Ensure this function uses new text
+      notifySurvivalMode();
     }
   }, [bioMetrics?.systemMode, permission, notifySurvivalMode]);
 
@@ -505,15 +504,13 @@ const Index = () => {
     }
   };
 
-  // PSYCHOLOGY FIX: Renamed 'Integrity' to 'Consistency Score'.
-  // Penalize missing data (PENDING/null), NOT bad health. Reward the act of logging.
   const calculateIntegrity = () => {
     let score = 100;
-    if (healthData.water.status === 'PENDING') score -= 20;
-    if (healthData.food.status === 'PENDING') score -= 20;
-    if (healthData.sleep.status === 'PENDING') score -= 20;
-    if (healthData.mental.status === 'PENDING') score -= 20;
-    if (healthData.exercise.status === 'PENDING') score -= 20;
+    if (healthData.water.status === 'LOW') score -= 15;
+    if (healthData.food.status === 'LOW') score -= 15;
+    if (healthData.sleep.status === 'LOW') score -= 20;
+    if (healthData.mental.status === 'HIGH') score -= 20;
+    if (healthData.exercise.status === 'PENDING') score -= 10;
     return Math.max(0, score);
   };
 
@@ -523,589 +520,638 @@ const Index = () => {
 
       {/* Cooldown Banner */}
       {cooldownActive && (
-        <div className="bg-orange-500/10 border-b border-orange-500/30 py-3 px-4">
+        <div className="bg-destructive/10 border-b border-destructive/30 py-3 px-4">
           <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="text-sm font-mono text-orange-500 flex items-center gap-2">
-              <span>🔋</span>
-              <span>System Recharging: {cooldownRemaining} remaining</span>
+            <p className="text-sm font-mono text-destructive flex items-center gap-2">
+              <span>🔒</span>
+              <span>Check-in locked: {cooldownRemaining} remaining</span>
             </p>
             <p className="text-[10px] text-muted-foreground">
-              Rest Mode Active
+              SURVIVAL warning dismissed
             </p>
           </div>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-6">
+        {/* Header Row */}
+        <div className="flex justify-between items-start gap-4 mb-4">
+          <SystemHeader
+            dayCount={dayCount}
+            isRecoveryMode={isRecoveryMode}
+            streak={streak}
+            userName={userName}
+            integrity={calculateIntegrity()}
+            operatingMode={operatingMode}
+            onSettingsClick={() => setShowSettings(true)}
+          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLogout}
+              className="text-xs font-mono text-muted-foreground hover:text-destructive transition-colors px-3 py-2 border border-transparent hover:border-destructive/50 rounded-lg shrink-0"
+            >
+              [LOGOUT]
+            </button>
+          </div>
+        </div>
 
-        {/* BENTO GRID LAYOUT */}
-        <div className="bento-grid">
-
-          {/* 1. HEADER BLOCK (Col Span 2) */}
-          <BentoCard className="col-span-2">
-            <SystemHeader
-              dayCount={dayCount}
-              isRecoveryMode={isRecoveryMode}
-              streak={streak}
-              userName={userName}
-              integrity={calculateIntegrity()}
-              operatingMode={operatingMode}
-              onSettingsClick={() => setShowSettings(true)}
-            />
-          </BentoCard>
-
-          {/* 2. WEATHER BLOCK (Mobile: Half Width) */}
-          <BentoCard className="flex flex-col justify-center items-center">
-            <WeatherWidget compact onWeatherUpdate={(w) => setWeatherData(w)} />
-          </BentoCard>
-
-          {/* 3. FOCUS / EXPORT (Mobile: Half Width) */}
-          <BentoCard className="flex flex-col gap-3 justify-center">
+        {/* Quick Actions Row */}
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <WeatherWidget compact onWeatherUpdate={(w) => setWeatherData(w)} />
+          <div className="flex items-center gap-2">
+            {/* Focus Timer Button */}
             <button
               onClick={() => setShowFocusTimer(true)}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-400 hover:bg-cyan-500/20 transition-all text-xs font-mono w-full"
+              className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-400 hover:bg-cyan-500/20 transition-all text-xs font-mono"
             >
               <span>🧘</span>
-              <span>Focus</span>
+              <span className="hidden sm:inline">Focus</span>
             </button>
+            {/* Data Export Button */}
             <button
               onClick={() => setShowDataExport(true)}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 border border-primary/30 rounded-xl text-primary hover:bg-primary/20 transition-all text-xs font-mono w-full"
+              className="flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/30 rounded-xl text-primary hover:bg-primary/20 transition-all text-xs font-mono"
             >
               <span>📤</span>
-              <span>Export</span>
+              <span className="hidden sm:inline">Export</span>
             </button>
-          </BentoCard>
-
-          {/* 4. BIOLOGICAL STATUS (Col Span 2) */}
-          <div className="bento-card col-span-2 p-1 overflow-visible border-none bg-transparent shadow-none">
-            <BiologicalStatus metrics={bioMetrics} />
           </div>
+        </div>
 
-          {/* 5. TODAY'S FOCUS (Col Span 2) - Caretaker Mode Only */}
-          {engagement?.focus && operatingMode === 'CARETAKER' && (
-            <div className="bento-card col-span-2 p-0 overflow-hidden border-0">
-              <div className={`h-full p-5 border-2 rounded-3xl transition-all duration-300 ${engagement.focus.priority === 'critical'
-                ? 'border-destructive bg-destructive/10'
-                : engagement.focus.priority === 'high'
-                  ? 'border-yellow-500 bg-yellow-500/10'
-                  : engagement.focus.priority === 'medium'
-                    ? 'border-primary/50 bg-primary/5'
-                    : 'border-muted/30 bg-black/20'
+        {/* Biological Status - Full Width */}
+        <BiologicalStatus metrics={bioMetrics} />
+
+        {/* TODAY'S FOCUS CARD (Prominent) - Only in Caretaker Mode */}
+        {engagement?.focus && operatingMode === 'CARETAKER' && (
+          <div className={`mb-5 p-4 sm:p-5 rounded-xl border-2 transition-all duration-300 animate-fade-in ${engagement.focus.priority === 'critical'
+            ? 'border-destructive bg-destructive/10 shadow-[0_0_20px_rgba(239,68,68,0.3)]'
+            : engagement.focus.priority === 'high'
+              ? 'border-yellow-500 bg-yellow-500/10'
+              : engagement.focus.priority === 'medium'
+                ? 'border-primary/50 bg-primary/5'
+                : 'border-muted/30 bg-black/20'
+            }`}>
+            <div className="flex justify-between items-start gap-3 mb-3">
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                📌 Today's Focus
+              </p>
+              <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full ${engagement.focus.priority === 'critical' ? 'bg-destructive text-white' :
+                engagement.focus.priority === 'high' ? 'bg-yellow-500 text-black' :
+                  'bg-primary/20 text-primary'
                 }`}>
-                <div className="flex justify-between items-start gap-3 mb-3">
-                  <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                    📌 Today's Focus
+                {engagement.focus.priority.toUpperCase()}
+              </span>
+            </div>
+            <h3 className={`text-lg sm:text-xl font-bold font-mono mb-2 ${engagement.focus.priority === 'critical' ? 'text-destructive' :
+              engagement.focus.priority === 'high' ? 'text-yellow-500' : 'text-primary'
+              }`}>
+              {engagement.focus.title}
+            </h3>
+            <p className="text-xs text-muted-foreground mb-2 font-mono">{engagement.focus.reason}</p>
+            <p className="text-sm font-mono leading-relaxed">{engagement.focus.action}</p>
+          </div>
+        )}
+
+        {/* PATTERN ALERTS */}
+        {engagement?.patterns && engagement.patterns.length > 0 && (
+          <div className="mb-5 space-y-2">
+            {engagement.patterns.map((pattern, idx) => (
+              <div key={idx} className="flex items-center gap-3 p-4 border border-yellow-500/50 bg-yellow-500/10 rounded-xl">
+                <span className="text-xl shrink-0">⚠️</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-mono font-bold text-yellow-500">
+                    {pattern.type === 'chronicSleep' && `${pattern.days} days of poor sleep`}
+                    {pattern.type === 'chronicStress' && `${pattern.days} days of high stress`}
+                    {pattern.type === 'lowSleep' && `${pattern.day}s often have poor sleep`}
+                    {pattern.type === 'highStress' && `${pattern.day}s often have high stress`}
                   </p>
-                  <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full ${engagement.focus.priority === 'critical' ? 'bg-destructive text-white' :
-                    engagement.focus.priority === 'high' ? 'bg-yellow-500 text-black' :
-                      'bg-primary/20 text-primary'
-                    }`}>
-                    {engagement.focus.priority.toUpperCase()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* RECOVERY SCORE */}
+        {engagement?.recoveryScore && (
+          <div className="mb-5 p-4 border border-muted/30 bg-black/20 rounded-xl">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                🧠 Recovery Score
+              </span>
+              <span className={`text-2xl font-mono font-bold ${engagement.recoveryScore.score >= 70 ? 'text-primary' :
+                engagement.recoveryScore.score >= 40 ? 'text-yellow-500' : 'text-destructive'
+                }`}>
+                {engagement.recoveryScore.score}
+              </span>
+            </div>
+            <div className="progress-bar mb-3">
+              <div
+                className={`progress-bar-fill ${engagement.recoveryScore.score >= 70 ? 'bg-primary' :
+                  engagement.recoveryScore.score >= 40 ? 'bg-yellow-500' : 'bg-destructive'
+                  }`}
+                style={{ width: `${engagement.recoveryScore.score}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-mono">
+              <span className={`${engagement.recoveryScore.trend === 'improving' ? 'text-primary' :
+                engagement.recoveryScore.trend === 'declining' ? 'text-destructive' : 'text-muted-foreground'
+                }`}>
+                {engagement.recoveryScore.trend === 'improving' && '↑ '}
+                {engagement.recoveryScore.trend === 'declining' && '↓ '}
+                {engagement.recoveryScore.message}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* TIME-AWARE ADVICE */}
+        {engagement?.timeAdvice && (
+          <div className="mb-5 p-4 border border-cyan-500/30 bg-cyan-500/5 rounded-xl">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0">{engagement.timeAdvice.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest mb-1">
+                  ⏰ {engagement.timeAdvice.timeOfDay.toUpperCase()} Advice
+                </p>
+                <p className="text-sm font-mono text-cyan-300 leading-relaxed">
+                  {engagement.timeAdvice.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* WHAT CHANGED DIFF */}
+        {engagement?.whatChanged && (
+          <div className="mb-5 p-4 border border-purple-500/30 bg-purple-500/5 rounded-xl">
+            <p className="text-[10px] font-mono text-purple-400 uppercase tracking-widest mb-3">
+              📊 What Changed Since Yesterday
+            </p>
+
+            {engagement.whatChanged.changes.length > 0 ? (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {engagement.whatChanged.changes.map((change, idx) => (
+                  <span
+                    key={idx}
+                    className={`text-xs font-mono px-2.5 py-1.5 rounded-lg ${change.improved
+                      ? 'bg-primary/20 text-primary'
+                      : 'bg-destructive/20 text-destructive'
+                      }`}
+                  >
+                    {change.metric}: {change.from} → {change.to} {change.improved ? '↑' : '↓'}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs font-mono text-muted-foreground mb-3">No changes detected</p>
+            )}
+
+            {engagement.whatChanged.insights.map((insight, idx) => (
+              <p key={idx} className="text-sm font-mono text-purple-300 mb-1 leading-relaxed">
+                💡 {insight}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {/* Report Status Button */}
+        {!healthData.water.logged && (
+          <button
+            onClick={() => setCurrentTaskIndex(0)}
+            className="w-full text-sm font-mono bg-primary/10 text-primary border border-primary/50 p-4 mb-5 hover:bg-primary/20 active:scale-[0.98] transition-all tracking-widest uppercase flex justify-between items-center rounded-xl"
+          >
+            <span>Report Status</span>
+            <span className="text-xs">[UPDATE]</span>
+          </button>
+        )}
+
+        <NotificationControl />
+
+        {/* Tactical Archives Toggle */}
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="w-full text-xs font-mono text-muted-foreground border border-dashed border-border p-3 mb-5 hover:text-primary hover:border-primary transition-colors flex justify-between items-center rounded-xl"
+        >
+          <span>:: TACTICAL ARCHIVES ::</span>
+          <span>{showHistory ? "CLOSE [-]" : "ACCESS [+]"}</span>
+        </button>
+
+        {showHistory && <div className="mb-5 animate-slide-up"><TacticalHistory /></div>}
+
+        {aiResponse && (() => {
+          const mode = aiResponse.metrics?.systemMode || aiResponse.systemStatus;
+          const capacity = aiResponse.metrics?.capacity || 100;
+          const confidence = aiResponse.confidence || 75;
+          const urgency = aiResponse.urgency || 'medium';
+          const timeframe = aiResponse.timeframe || 'today';
+          const category = aiResponse.category || 'general';
+
+          let severity: 'SUGGESTION' | 'WARNING' | 'CRITICAL' = 'SUGGESTION';
+          let severityColor = 'border-primary/30 bg-primary/5';
+          let badgeColor = 'bg-primary/20 text-primary';
+          let icon = '💡';
+
+          if (mode === 'SURVIVAL' || capacity < 20 || urgency === 'critical') {
+            severity = 'CRITICAL';
+            severityColor = 'border-destructive bg-destructive/10';
+            badgeColor = 'bg-destructive text-white';
+            icon = '🚨';
+          } else if (mode === 'LOCKED_RECOVERY' || capacity < 45 || urgency === 'high') {
+            severity = 'WARNING';
+            severityColor = 'border-yellow-500/50 bg-yellow-500/10';
+            badgeColor = 'bg-yellow-500 text-black';
+            icon = '⚠️';
+          }
+
+          // Confidence color
+          const confidenceColor = confidence >= 80 ? 'text-primary'
+            : confidence >= 60 ? 'text-yellow-500'
+              : 'text-orange-500';
+
+          return (
+            <div className={`system-card mb-5 ${severityColor} transition-all duration-300 animate-slide-up`}>
+              {/* Header with badges */}
+              <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-full ${badgeColor}`}>
+                    {icon} {severity}
+                  </span>
+                  {/* Category Badge */}
+                  <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-muted/30 text-muted-foreground uppercase">
+                    {category}
                   </span>
                 </div>
-                <h3 className={`text-lg font-bold font-mono mb-2 ${engagement.focus.priority === 'critical' ? 'text-destructive' :
-                  engagement.focus.priority === 'high' ? 'text-yellow-500' : 'text-primary'
-                  }`}>
-                  {engagement.focus.title}
-                </h3>
-                <p className="text-sm font-mono leading-relaxed opacity-90">{engagement.focus.action}</p>
-              </div>
-            </div>
-          )}
-
-          {/* PATTERN ALERTS */}
-          {engagement?.patterns && engagement.patterns.length > 0 && (
-            <div className="mb-5 space-y-2">
-              {engagement.patterns.map((pattern, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-4 border border-yellow-500/50 bg-yellow-500/10 rounded-xl">
-                  <span className="text-xl shrink-0">⚠️</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-mono font-bold text-yellow-500">
-                      {pattern.type === 'chronicSleep' && `${pattern.days} days of poor sleep`}
-                      {pattern.type === 'chronicStress' && `${pattern.days} days of high stress`}
-                      {pattern.type === 'lowSleep' && `${pattern.day}s often have poor sleep`}
-                      {pattern.type === 'highStress' && `${pattern.day}s often have high stress`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* RECOVERY SCORE */}
-          {engagement?.recoveryScore && (
-            <div className="mb-5 p-4 border border-muted/30 bg-black/20 rounded-xl">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                  🧠 Recovery Score
-                </span>
-                <span className={`text-2xl font-mono font-bold ${engagement.recoveryScore.score >= 70 ? 'text-primary' :
-                  engagement.recoveryScore.score >= 40 ? 'text-yellow-500' : 'text-destructive'
-                  }`}>
-                  {engagement.recoveryScore.score}
-                </span>
-              </div>
-              <div className="progress-bar mb-3">
-                <div
-                  className={`progress-bar-fill ${engagement.recoveryScore.score >= 70 ? 'bg-primary' :
-                    engagement.recoveryScore.score >= 40 ? 'bg-yellow-500' : 'bg-destructive'
-                    }`}
-                  style={{ width: `${engagement.recoveryScore.score}%` }}
-                />
-              </div>
-              <div className="flex justify-between items-center text-[10px] font-mono">
-                <span className={`${engagement.recoveryScore.trend === 'improving' ? 'text-primary' :
-                  engagement.recoveryScore.trend === 'declining' ? 'text-destructive' : 'text-muted-foreground'
-                  }`}>
-                  {engagement.recoveryScore.trend === 'improving' && '↑ '}
-                  {engagement.recoveryScore.trend === 'declining' && '↓ '}
-                  {engagement.recoveryScore.message}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* TIME-AWARE ADVICE */}
-          {engagement?.timeAdvice && (
-            <div className="mb-5 p-4 border border-cyan-500/30 bg-cyan-500/5 rounded-xl">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl shrink-0">{engagement.timeAdvice.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest mb-1">
-                    ⏰ {engagement.timeAdvice.timeOfDay.toUpperCase()} Advice
-                  </p>
-                  <p className="text-sm font-mono text-cyan-300 leading-relaxed">
-                    {engagement.timeAdvice.message}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* WHAT CHANGED DIFF */}
-          {engagement?.whatChanged && (
-            <div className="mb-5 p-4 border border-purple-500/30 bg-purple-500/5 rounded-xl">
-              <p className="text-[10px] font-mono text-purple-400 uppercase tracking-widest mb-3">
-                📊 What Changed Since Yesterday
-              </p>
-
-              {engagement.whatChanged.changes.length > 0 ? (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {engagement.whatChanged.changes.map((change, idx) => (
-                    <span
-                      key={idx}
-                      className={`text-xs font-mono px-2.5 py-1.5 rounded-lg ${change.improved
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-destructive/20 text-destructive'
-                        }`}
-                    >
-                      {change.metric}: {change.from} → {change.to} {change.improved ? '↑' : '↓'}
+                <div className="flex items-center gap-3">
+                  {/* Confidence Indicator */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground font-mono">CONF:</span>
+                    <span className={`text-sm font-mono font-bold ${confidenceColor}`}>
+                      {confidence}%
                     </span>
-                  ))}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    CAP: {capacity}%
+                  </span>
                 </div>
-              ) : (
-                <p className="text-xs font-mono text-muted-foreground mb-3">No changes detected</p>
+              </div>
+
+              {/* Action */}
+              {aiResponse.action && aiResponse.action !== "None" && (
+                <p className={`text-base sm:text-lg font-bold font-mono mb-2 ${severity === 'CRITICAL' ? 'text-destructive' :
+                  severity === 'WARNING' ? 'text-yellow-500' : 'text-primary'
+                  }`}>
+                  {aiResponse.action}
+                </p>
               )}
 
-              {engagement.whatChanged.insights.map((insight, idx) => (
-                <p key={idx} className="text-sm font-mono text-purple-300 mb-1 leading-relaxed">
-                  💡 {insight}
+              {/* Timeframe */}
+              {timeframe && (
+                <p className="text-xs font-mono text-primary/70 mb-3">
+                  ⏰ {timeframe}
                 </p>
-              ))}
-            </div>
-          )}
+              )}
 
-          {/* Report Status Button */}
-          {!healthData.water.logged && (
-            <button
-              onClick={() => setCurrentTaskIndex(0)}
-              className="w-full text-sm font-mono bg-primary/10 text-primary border border-primary/50 p-4 mb-5 hover:bg-primary/20 active:scale-[0.98] transition-all tracking-widest uppercase flex justify-between items-center rounded-xl"
-            >
-              <span>Report Status</span>
-              <span className="text-xs">[UPDATE]</span>
-            </button>
-          )}
+              {/* Explanation */}
+              <p className="text-sm font-mono text-muted-foreground leading-relaxed">
+                {aiResponse.explanation}
+              </p>
 
-          <NotificationControl />
-
-          {/* Tactical Archives Toggle */}
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="w-full text-xs font-mono text-muted-foreground border border-dashed border-border p-3 mb-5 hover:text-primary hover:border-primary transition-colors flex justify-between items-center rounded-xl"
-          >
-            <span>:: TACTICAL ARCHIVES ::</span>
-            <span>{showHistory ? "CLOSE [-]" : "ACCESS [+]"}</span>
-          </button>
-
-          {showHistory && <div className="mb-5 animate-slide-up"><TacticalHistory /></div>}
-
-          {aiResponse && (() => {
-            const mode = aiResponse.metrics?.systemMode || aiResponse.systemStatus;
-            const capacity = aiResponse.metrics?.capacity || 100;
-            const confidence = aiResponse.confidence || 75;
-            const urgency = aiResponse.urgency || 'medium';
-            const timeframe = aiResponse.timeframe || 'today';
-            const category = aiResponse.category || 'general';
-
-            let severity: 'SUGGESTION' | 'WARNING' | 'CRITICAL' = 'SUGGESTION';
-            let severityColor = 'border-primary/30 bg-primary/5';
-            let badgeColor = 'bg-primary/20 text-primary';
-            let icon = '💡';
-
-            if (mode === 'SURVIVAL' || capacity < 20 || urgency === 'critical') {
-              severity = 'CRITICAL';
-              severityColor = 'border-destructive bg-destructive/10';
-              badgeColor = 'bg-destructive text-white';
-              icon = '🚨';
-            } else if (mode === 'LOCKED_RECOVERY' || capacity < 45 || urgency === 'high') {
-              severity = 'WARNING';
-              severityColor = 'border-yellow-500/50 bg-yellow-500/10';
-              badgeColor = 'bg-yellow-500 text-black';
-              icon = '⚠️';
-            }
-
-            // Confidence color
-            const confidenceColor = confidence >= 80 ? 'text-primary'
-              : confidence >= 60 ? 'text-yellow-500'
-                : 'text-orange-500';
-
-            return (
-              <div className={`system-card mb-5 ${severityColor} transition-all duration-300 animate-slide-up`}>
-                {/* Header with badges */}
-                <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2.5 py-1.5 rounded-full ${badgeColor}`}>
-                      {icon} {severity}
-                    </span>
-                    {/* Category Badge */}
-                    <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-muted/30 text-muted-foreground uppercase">
-                      {category}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {/* Confidence Indicator */}
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground font-mono">CONF:</span>
-                      <span className={`text-sm font-mono font-bold ${confidenceColor}`}>
-                        {confidence}%
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      CAP: {capacity}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action */}
-                {aiResponse.action && aiResponse.action !== "None" && (
-                  <p className={`text-base sm:text-lg font-bold font-mono mb-2 ${severity === 'CRITICAL' ? 'text-destructive' :
-                    severity === 'WARNING' ? 'text-yellow-500' : 'text-primary'
-                    }`}>
-                    {aiResponse.action}
+              {/* Trend Summary */}
+              {aiResponse.trendSummary && aiResponse.trendSummary !== 'Using rules-based analysis.' && (
+                <div className="mt-3 p-2 bg-muted/10 rounded-lg">
+                  <p className="text-[10px] font-mono text-muted-foreground">
+                    📈 {aiResponse.trendSummary}
                   </p>
-                )}
-
-                {/* Timeframe */}
-                {timeframe && (
-                  <p className="text-xs font-mono text-primary/70 mb-3">
-                    ⏰ {timeframe}
-                  </p>
-                )}
-
-                {/* Explanation */}
-                <p className="text-sm font-mono text-muted-foreground leading-relaxed">
-                  {aiResponse.explanation}
-                </p>
-
-                {/* Trend Summary */}
-                {aiResponse.trendSummary && aiResponse.trendSummary !== 'Using rules-based analysis.' && (
-                  <div className="mt-3 p-2 bg-muted/10 rounded-lg">
-                    <p className="text-[10px] font-mono text-muted-foreground">
-                      📈 {aiResponse.trendSummary}
-                    </p>
-                  </div>
-                )}
-
-                {/* Memory Callback */}
-                {aiResponse.memoryCallback?.message && (
-                  <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-                    <p className="text-[10px] font-mono text-blue-400 uppercase tracking-widest mb-1">
-                      💭 Memory
-                    </p>
-                    <p className="text-sm font-mono text-blue-300 leading-relaxed">
-                      {aiResponse.memoryCallback.message}
-                    </p>
-                  </div>
-                )}
-
-                {/* Confidence Legend */}
-                <div className="mt-4 pt-3 border-t border-muted/20 flex flex-wrap justify-between items-center gap-2">
-                  <div className="text-[10px] font-mono text-muted-foreground/70">
-                    {severity === 'CRITICAL' ? (
-                      <span>🚨 CRITICAL = Immediate action required</span>
-                    ) : severity === 'WARNING' ? (
-                      <span>⚠️ WARNING = Recommended action</span>
-                    ) : (
-                      <span>💡 SUGGESTION = Optional improvement</span>
-                    )}
-                  </div>
-                  <div className="text-[10px] font-mono text-muted-foreground/50">
-                    {confidence >= 80 ? '✅ High confidence' : confidence >= 60 ? '🟡 Moderate confidence' : '🟠 Learning...'}
-                  </div>
                 </div>
+              )}
 
-                {/* Feedback Buttons */}
-                <div className="mt-4 pt-3 border-t border-muted/20">
-                  {feedbackGiven ? (
-                    <div className="flex items-center justify-center gap-2 text-sm font-mono">
-                      <span className="text-primary">✅ Thanks for your feedback!</span>
-                      <span className="text-muted-foreground">({feedbackGiven === 'helpful' ? '👍' : '👎'})</span>
-                    </div>
+              {/* Memory Callback */}
+              {aiResponse.memoryCallback?.message && (
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                  <p className="text-[10px] font-mono text-blue-400 uppercase tracking-widest mb-1">
+                    💭 Memory
+                  </p>
+                  <p className="text-sm font-mono text-blue-300 leading-relaxed">
+                    {aiResponse.memoryCallback.message}
+                  </p>
+                </div>
+              )}
+
+              {/* Confidence Legend */}
+              <div className="mt-4 pt-3 border-t border-muted/20 flex flex-wrap justify-between items-center gap-2">
+                <div className="text-[10px] font-mono text-muted-foreground/70">
+                  {severity === 'CRITICAL' ? (
+                    <span>🚨 CRITICAL = Immediate action required</span>
+                  ) : severity === 'WARNING' ? (
+                    <span>⚠️ WARNING = Recommended action</span>
                   ) : (
-                    <div className="flex items-center justify-center gap-3">
-                      <span className="text-[10px] font-mono text-muted-foreground">Was this helpful?</span>
-                      <button
-                        onClick={async () => {
-                          setFeedbackLoading(true);
-                          try {
-                            await api.submitFeedback({
-                              rating: 'helpful',
-                              aiResponse: {
-                                action: aiResponse.action,
-                                explanation: aiResponse.explanation,
-                                urgency: aiResponse.urgency,
-                                confidence: aiResponse.confidence,
-                                category: aiResponse.category
-                              },
-                              healthContext: {
-                                ...Object.values(healthData).reduce((acc, h) => ({ ...acc, [h.category]: h.status }), {}),
-                                capacity
-                              }
-                            });
-                            setFeedbackGiven('helpful');
-                            toast({ title: '👍 Thanks!', description: 'Your feedback helps us improve.' });
-                          } catch (e) {
-                            console.error('Feedback error:', e);
-                          }
-                          setFeedbackLoading(false);
-                        }}
-                        disabled={feedbackLoading}
-                        className="px-3 py-1.5 bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-mono font-bold hover:bg-primary/30 transition-all disabled:opacity-50"
-                      >
-                        👍 Yes
-                      </button>
-                      <button
-                        onClick={async () => {
-                          setFeedbackLoading(true);
-                          try {
-                            await api.submitFeedback({
-                              rating: 'not_helpful',
-                              aiResponse: {
-                                action: aiResponse.action,
-                                explanation: aiResponse.explanation,
-                                urgency: aiResponse.urgency,
-                                confidence: aiResponse.confidence,
-                                category: aiResponse.category
-                              },
-                              healthContext: {
-                                ...Object.values(healthData).reduce((acc, h) => ({ ...acc, [h.category]: h.status }), {}),
-                                capacity
-                              }
-                            });
-                            setFeedbackGiven('not_helpful');
-                            toast({ title: '👎 Got it', description: 'We\'ll work on better recommendations.' });
-                          } catch (e) {
-                            console.error('Feedback error:', e);
-                          }
-                          setFeedbackLoading(false);
-                        }}
-                        disabled={feedbackLoading}
-                        className="px-3 py-1.5 bg-muted/20 text-muted-foreground border border-muted/30 rounded-lg text-xs font-mono font-bold hover:bg-muted/30 transition-all disabled:opacity-50"
-                      >
-                        👎 No
-                      </button>
-                    </div>
+                    <span>💡 SUGGESTION = Optional improvement</span>
                   )}
                 </div>
+                <div className="text-[10px] font-mono text-muted-foreground/50">
+                  {confidence >= 80 ? '✅ High confidence' : confidence >= 60 ? '🟡 Moderate confidence' : '🟠 Learning...'}
+                </div>
               </div>
-            );
-          })()}
 
-          {isLoading && (
-            <div className="system-card mb-5 text-center py-8">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="system-text text-primary">PROCESSING...</p>
-            </div>
-          )}
-
-          {isRecoveryMode ? (
-            <>
-              <RecoveryMode
-                tasks={recoveryTasks}
-                onToggleTask={handleToggleRecoveryTask}
-              />
-              <button
-                onClick={() => setIsRecoveryMode(false)}
-                className="system-button w-full mb-5"
-              >
-                EXIT RECOVERY MODE
-              </button>
-            </>
-          ) : (
-            <>
-              {/* 6. LOGGING STATUS GRID (Col Span 2) */}
-              <div className="bento-card col-span-2 p-5">
-                <p className="system-text text-muted-foreground mb-4 flex justify-between">
-                  <span>DAILY LOGS</span>
-                  <span>[{loggedCount}/{categories.length}]</span>
-                </p>
-                <div className="grid grid-cols-5 gap-2">
-                  {categories.map((cat, idx) => (
+              {/* Feedback Buttons */}
+              <div className="mt-4 pt-3 border-t border-muted/20">
+                {feedbackGiven ? (
+                  <div className="flex items-center justify-center gap-2 text-sm font-mono">
+                    <span className="text-primary">✅ Thanks for your feedback!</span>
+                    <span className="text-muted-foreground">({feedbackGiven === 'helpful' ? '👍' : '👎'})</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-[10px] font-mono text-muted-foreground">Was this helpful?</span>
                     <button
-                      key={cat}
-                      onClick={() => setCurrentTaskIndex(idx)}
-                      className={`aspect-square rounded-xl flex flex-col items-center justify-center transition-all ${idx === currentTaskIndex
-                        ? 'bg-primary/20 border-2 border-primary'
-                        : healthData[cat].logged
-                          ? 'bg-primary/10 border border-primary/30 opacity-50'
-                          : 'bg-muted/10 border border-muted/20 hover:bg-muted/20'
-                        }`}
+                      onClick={async () => {
+                        setFeedbackLoading(true);
+                        try {
+                          await api.submitFeedback({
+                            rating: 'helpful',
+                            aiResponse: {
+                              action: aiResponse.action,
+                              explanation: aiResponse.explanation,
+                              urgency: aiResponse.urgency,
+                              confidence: aiResponse.confidence,
+                              category: aiResponse.category
+                            },
+                            healthContext: {
+                              ...Object.values(healthData).reduce((acc, h) => ({ ...acc, [h.category]: h.status }), {}),
+                              capacity
+                            }
+                          });
+                          setFeedbackGiven('helpful');
+                          toast({ title: '👍 Thanks!', description: 'Your feedback helps us improve.' });
+                        } catch (e) {
+                          console.error('Feedback error:', e);
+                        }
+                        setFeedbackLoading(false);
+                      }}
+                      disabled={feedbackLoading}
+                      className="px-3 py-1.5 bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-mono font-bold hover:bg-primary/30 transition-all disabled:opacity-50"
                     >
-                      <span className="text-xl mb-1">{TASK_CATEGORIES[cat].icon}</span>
-                      {healthData[cat].logged && (
-                        <span className="text-[10px] text-primary">✓</span>
-                      )}
+                      👍 Yes
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setFeedbackLoading(true);
+                        try {
+                          await api.submitFeedback({
+                            rating: 'not_helpful',
+                            aiResponse: {
+                              action: aiResponse.action,
+                              explanation: aiResponse.explanation,
+                              urgency: aiResponse.urgency,
+                              confidence: aiResponse.confidence,
+                              category: aiResponse.category
+                            },
+                            healthContext: {
+                              ...Object.values(healthData).reduce((acc, h) => ({ ...acc, [h.category]: h.status }), {}),
+                              capacity
+                            }
+                          });
+                          setFeedbackGiven('not_helpful');
+                          toast({ title: '👎 Got it', description: 'We\'ll work on better recommendations.' });
+                        } catch (e) {
+                          console.error('Feedback error:', e);
+                        }
+                        setFeedbackLoading(false);
+                      }}
+                      disabled={feedbackLoading}
+                      className="px-3 py-1.5 bg-muted/20 text-muted-foreground border border-muted/30 rounded-lg text-xs font-mono font-bold hover:bg-muted/30 transition-all disabled:opacity-50"
+                    >
+                      👎 No
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {isLoading && (
+          <div className="system-card mb-5 text-center py-8">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="system-text text-primary">PROCESSING...</p>
+          </div>
+        )}
+
+        {isRecoveryMode ? (
+          <>
+            <RecoveryMode
+              tasks={recoveryTasks}
+              onToggleTask={handleToggleRecoveryTask}
+            />
+            <button
+              onClick={() => setIsRecoveryMode(false)}
+              className="system-button w-full mb-5"
+            >
+              EXIT RECOVERY MODE
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Status Overview */}
+            <div className="system-card mb-5">
+              <p className="system-text text-muted-foreground mb-4">
+                STATUS CHECK [{loggedCount}/{categories.length}]
+              </p>
+
+              {/* Progress bar */}
+              <div className="flex gap-1.5 mb-5">
+                {categories.map((cat) => (
+                  <div
+                    key={cat}
+                    className={`flex-1 h-2 rounded-full transition-all duration-300 ${healthData[cat].logged ? 'bg-primary shadow-[0_0_8px_#4ade8080]' : 'bg-muted/50'
+                      }`}
+                  />
+                ))}
+              </div>
+
+              {/* Status grid - responsive */}
+              <div className="status-grid">
+                {categories.map((cat, idx) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCurrentTaskIndex(idx)}
+                    className={`status-item ${idx === currentTaskIndex
+                      ? 'status-item-active'
+                      : healthData[cat].logged
+                        ? 'status-item-logged hover:border-primary/50 hover:bg-black/40'
+                        : 'status-item-pending hover:border-primary/70 hover:bg-primary/5'
+                      }`}
+                  >
+                    <div className="text-lg mb-1">{TASK_CATEGORIES[cat].icon}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground mb-1 tracking-wider">
+                      {TASK_CATEGORIES[cat].label}
+                    </div>
+                    <div className={`text-xs sm:text-sm font-bold font-mono ${getStatusColor(healthData[cat].status)}`}>
+                      {healthData[cat].logged ? (
+                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${getStatusBg(healthData[cat].status)}`}>
+                          ✓
+                        </span>
+                      ) : '---'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Current Task Input */}
+            {currentCategory && (
+              <div className="system-card mb-5 animate-slide-up">
+                <p className="system-text text-muted-foreground mb-2">
+                  INPUT [{currentTaskIndex + 1}/{categories.length}]
+                </p>
+                <p className="text-base sm:text-lg font-medium mb-4 flex items-center gap-3">
+                  <span className="text-2xl">{TASK_CATEGORIES[currentCategory].icon}</span>
+                  {TASK_CATEGORIES[currentCategory].question}
+                </p>
+
+                <div className="space-y-2">
+                  {TASK_CATEGORIES[currentCategory].options.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleLogCategory(currentCategory, option.value, option.status)}
+                      className="option-button"
+                    >
+                      <span className="font-mono text-sm">{option.label}</span>
+                      <span className={`text-xs font-mono ${getStatusColor(option.status as StatusValue)} ${getStatusBg(option.status as StatusValue)} px-2 py-1 rounded-full`}>
+                        {option.status}
+                      </span>
                     </button>
                   ))}
                 </div>
-
-                {/* ACTIVE TASK CARD */}
-                {allLogged ? (
-                  <div className="mt-4 text-center p-4 bg-primary/5 rounded-xl border border-primary/20">
-                    <p className="text-primary font-mono text-sm">ALL SYSTEMS CHECKED</p>
-
-                    {todayCheckedIn ? (
-                      <div className="mt-2">
-                        <p className="text-xs text-muted-foreground">Analysis Complete</p>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={callAI}
-                        disabled={isLoading}
-                        className="mt-3 w-full py-3 bg-primary text-black font-bold rounded-xl hover:bg-primary/90 transition-all font-mono"
-                      >
-                        {isLoading ? "CALCULATING..." : "RUN ANALYSIS"}
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-4 animate-fade-in">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-mono text-muted-foreground">
-                        Logging: <span className="text-primary">{TASK_CATEGORIES[currentCategory].label}</span>
-                      </span>
-                    </div>
-                    <h2 className="text-lg font-medium mb-4">{TASK_CATEGORIES[currentCategory].question}</h2>
-                    <div className="grid grid-cols-2 gap-2">
-                      {TASK_CATEGORIES[currentCategory].options.map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => handleLogCategory(currentCategory, opt.value, opt.status)}
-                          className="p-3 rounded-xl border border-muted/30 hover:bg-primary/10 hover:border-primary/50 text-left transition-all"
-                        >
-                          <span className="block text-sm font-medium">{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
+            )}
 
-              {/* 7. AI INSIGHT (Col Span 2) */}
-              {aiResponse && (
-                <div className="bento-card col-span-2 p-5 border-l-4 border-l-primary bg-primary/5 mt-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl">💡</span>
-                    <span className="text-xs font-mono text-primary uppercase tracking-widest">Insight</span>
-                  </div>
-                  <p className="text-sm font-mono leading-relaxed opacity-90">
-                    {aiResponse.explanation}
-                  </p>
+            {/* Submit Button */}
+            {todayCheckedIn ? (
+              <div className="text-center mb-5 p-5 border border-muted bg-muted/10 rounded-xl">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl">✅</span>
                 </div>
-              )}
-            </>
-          )}
+                <p className="text-sm font-mono text-muted-foreground mb-2">Today's check-in recorded</p>
+                <p className="text-xs font-mono text-primary flex items-center justify-center gap-2">
+                  <span>🕐</span>
+                  <span>Next cycle: {nextCycleTime || 'Tomorrow'}</span>
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={callAI}
+                disabled={isLoading || (!allLogged && !currentCategory)}
+                className="system-button w-full mb-5"
+              >
+                {isLoading ? "PROCESSING..." : aiResponse ? "UPDATE STATUS" : !allLogged ? `COMPLETE ${categories.length - loggedCount} MORE` : "SUBMIT CHECK-IN"}
+              </button>
+            )}
+          </>
+        )}
 
-          {/* 8. CONSISTENCY SCORE (Col Span 2) */}
-          <div className="bento-card col-span-2 p-4 flex justify-between items-center bg-black/20">
-            <ConsistencyState messageIndex={dayCount} />
-            <p className="text-[10px] text-muted-foreground font-mono">v1.2 Mobile-Native</p>
-          </div>
-
-        </div> {/* END BENTO GRID */}
+        <ConsistencyState messageIndex={dayCount} />
 
         <footer className="text-center py-6">
           <p className="text-xs text-muted-foreground">
-            Caretaker AI System • {new Date().getFullYear()}
+            v1.0.0 | Caretaker AI
           </p>
         </footer>
-      </div> {/* END MAX-W-6XL CONTAINER */}
+      </div>
 
-      {/* UNIFIED DOCK NAVIGATION */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
-        <div className="flex items-center justify-between gap-1 p-2 rounded-2xl bg-black/80 backdrop-blur-2xl border border-white/10 shadow-2xl">
-
-          {/* Home */}
+      {/* Bottom Navigation Bar - Mobile only */}
+      <nav className="bottom-nav sm:hidden">
+        <div className="bottom-nav-inner">
           <button
-            onClick={() => {
-              setShowHistory(false);
-              setShowAnalytics(false);
-              setShowSettings(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="p-3 text-muted-foreground hover:text-white hover:bg-white/10 rounded-xl transition-all"
+            onClick={() => setShowAnalytics(true)}
+            className="bottom-nav-item"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span className="bottom-nav-label">Stats</span>
           </button>
-
-          {/* History/Calendar */}
           <button
-            onClick={() => setShowHistory(!showHistory)}
-            className={`p-3 rounded-xl transition-all ${showHistory ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-white hover:bg-white/10'}`}
+            onClick={() => setShowAchievements(true)}
+            className="bottom-nav-item"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15l-2 5l-2.5-1.5L5 21V11a7 7 0 1114 0v10l-2.5-2.5L14 20l-2-5z" />
+              <circle cx="12" cy="8" r="4" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} />
+            </svg>
+            <span className="bottom-nav-label">Badges</span>
           </button>
-
-          {/* PRIMARY ACTION: CHECK-IN */}
           <button
-            onClick={() => {
-              const el = document.querySelector('.bento-grid'); // simplistic scroll
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              setCurrentTaskIndex(0);
-            }}
-            className="mx-1 h-12 w-12 flex items-center justify-center bg-primary text-black rounded-full shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:scale-105 active:scale-95 transition-all"
+            onClick={() => setShowGoalSettings(true)}
+            className="bottom-nav-item"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a6 6 0 100 12 6 6 0 000-12zm0 4a2 2 0 100 4 2 2 0 000-4z" />
+            </svg>
+            <span className="bottom-nav-label">Goals</span>
           </button>
-
-          {/* Insights */}
           <button
-            onClick={() => setShowAnalytics(!showAnalytics)}
-            className={`p-3 rounded-xl transition-all ${showAnalytics ? 'text-cyan-400 bg-cyan-500/10' : 'text-muted-foreground hover:text-white hover:bg-white/10'}`}
+            onClick={() => setShowWeeklyReview(!showWeeklyReview)}
+            className="bottom-nav-item"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="bottom-nav-label">Review</span>
           </button>
-
-          {/* Profile/Settings */}
           <button
-            onClick={() => setShowSettings(true)}
-            className="p-3 text-muted-foreground hover:text-white hover:bg-white/10 rounded-xl transition-all"
+            onClick={() => setShowFocusTimer(true)}
+            className="bottom-nav-item"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span className="bottom-nav-label">Focus</span>
           </button>
-
         </div>
+      </nav>
+
+      {/* Desktop Floating Action Buttons */}
+      <div className="fab-container">
+        <button
+          onClick={() => setShowAnalytics(true)}
+          className="fab-button bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border-cyan-500/50"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span>Analytics</span>
+        </button>
+        <button
+          onClick={() => setShowWeeklyReview(!showWeeklyReview)}
+          className="fab-button bg-primary/20 hover:bg-primary/30 text-primary border-primary/50"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span>Review</span>
+        </button>
+        <button
+          onClick={() => setShowAchievements(true)}
+          className="fab-button bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/50"
+        >
+          <span className="text-lg">🏅</span>
+          <span>Badges</span>
+        </button>
+        <button
+          onClick={() => setShowGoalSettings(true)}
+          className="fab-button bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/50"
+        >
+          <span className="text-lg">🎯</span>
+          <span>Goals</span>
+        </button>
+        <button
+          onClick={() => setShowFocusTimer(true)}
+          className="fab-button bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border-purple-500/50"
+        >
+          <span className="text-lg">🧘</span>
+          <span>Focus</span>
+        </button>
       </div>
 
       {/* Analytics Dashboard Modal */}

@@ -97,8 +97,8 @@ export const useNotifications = () => {
   const notifyCriticalCapacity = useCallback(
     (capacity: number) => {
       return sendNotification({
-        title: "🔋 Low Battery Warning",
-        body: `Your cognitive capacity is at ${capacity}%. Rest is recommended soon.`,
+        title: "⚠️ CRITICAL CAPACITY",
+        body: `Your cognitive capacity is at ${capacity}%. Rest required immediately.`,
         tag: "critical-capacity",
         requireInteraction: true,
       });
@@ -121,8 +121,8 @@ export const useNotifications = () => {
   // Recovery mode notification
   const notifyRecoveryMode = useCallback(() => {
     return sendNotification({
-      title: "🧘 Rest Mode Active",
-      body: "Load limits reached. Switching to Rest Mode protocols.",
+      title: "🛡️ RECOVERY MODE ACTIVE",
+      body: "Load exceeded. Recovery protocols engaged. Rest is mandatory.",
       tag: "recovery-mode",
       requireInteraction: true,
     });
@@ -152,8 +152,8 @@ export const useNotifications = () => {
   // Survival mode warning
   const notifySurvivalMode = useCallback(() => {
     return sendNotification({
-      title: "🌙 Deep Rest Protocol",
-      body: "Urgent: Biological debt is high. Please disconnect and recharge.",
+      title: "🚨 SURVIVAL MODE",
+      body: "CRITICAL: Biological debt exceeds safety limits. Immediate action required.",
       tag: "survival-mode",
       requireInteraction: true,
     });

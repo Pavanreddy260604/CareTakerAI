@@ -63,10 +63,10 @@ const SystemHeader = ({ dayCount, isRecoveryMode, streak = 0, userName = "", ope
 
         {/* Recovery Mode Alert */}
         {isRecoveryMode && operatingMode === 'CARETAKER' && (
-          <div className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-            <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-            <span className="text-orange-500 text-xs sm:text-sm font-medium">
-              REST MODE RECOMMENDED
+          <div className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-destructive/10 border border-destructive/30 rounded-lg">
+            <span className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
+            <span className="text-destructive text-xs sm:text-sm font-medium">
+              RECOVERY MODE
             </span>
           </div>
         )}
