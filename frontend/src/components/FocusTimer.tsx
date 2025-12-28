@@ -10,9 +10,9 @@ interface FocusTimerProps {
 type TimerState = 'idle' | 'focus' | 'break' | 'paused';
 
 const FOCUS_DURATIONS = [
-    { label: '25 min', value: 25 * 60 },
-    { label: '45 min', value: 45 * 60 },
-    { label: '90 min', value: 90 * 60 },
+    { label: '25m', value: 25 * 60, desc: 'Pomodoro' },
+    { label: '45m', value: 45 * 60, desc: 'Deep Work' },
+    { label: '90m', value: 90 * 60, desc: 'Flow State' },
 ];
 
 const BREAK_DURATION = 5 * 60;
@@ -23,10 +23,12 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
     const [timeRemaining, setTimeRemaining] = useState(selectedDuration);
     const [sessionsCompleted, setSessionsCompleted] = useState(0);
     const [totalFocusTime, setTotalFocusTime] = useState(0);
+    const [weeklyStats, setWeeklyStats] = useState<{ totalSessions: number; totalMinutes: number } | null>(null);
+    const [tick, setTick] = useState(false); // For pulse animation
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
 
-    // Load saved stats from localStorage
+    // Load saved stats
     useEffect(() => {
         const savedStats = localStorage.getItem('focus_stats');
         if (savedStats) {
@@ -39,52 +41,49 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
                 }
             } catch (e) { }
         }
+
+        // Fetch weekly stats
+        const fetchWeeklyStats = async () => {
+            try {
+                const stats = await api.getFocusStats();
+                setWeeklyStats(stats);
+            } catch (e) { }
+        };
+        fetchWeeklyStats();
     }, []);
 
-    // Save stats locally and to backend
+    // Save stats
     const saveStats = useCallback(async (sessions: number, totalTime: number, sessionDuration?: number) => {
-        // Save locally
         localStorage.setItem('focus_stats', JSON.stringify({
             date: new Date().toDateString(),
             sessions,
             totalTime
         }));
 
-        // Save to backend if session completed
         if (sessionDuration && sessionDuration > 60) {
             try {
-                await api.saveFocusSession(sessionDuration);
-            } catch (e) {
-                console.error('Failed to save focus session to backend:', e);
-            }
+                const result = await api.saveFocusSession(sessionDuration);
+                if (result.todayStats) {
+                    toast({
+                        title: '💾 Session Saved',
+                        description: `Today: ${result.todayStats.sessions} sessions, ${result.todayStats.totalMinutes} min`
+                    });
+                }
+            } catch (e) { }
         }
-    }, []);
+    }, [toast]);
 
-    // Format time as MM:SS
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    // Calculate progress percentage
+    // Calculate progress
     const getProgress = () => {
         const total = state === 'break' ? BREAK_DURATION : selectedDuration;
         return ((total - timeRemaining) / total) * 100;
     };
 
-    // Get color based on state
-    const getColor = () => {
-        if (state === 'break') return 'cyan';
-        if (state === 'focus') return 'primary';
-        if (state === 'paused') return 'yellow';
-        return 'muted';
-    };
-
-    // Timer tick
+    // Timer tick - LIVE COUNTDOWN
     useEffect(() => {
         if (state === 'focus' || state === 'break') {
             intervalRef.current = setInterval(() => {
+                setTick(t => !t); // Toggle for animation
                 setTimeRemaining(prev => {
                     if (prev <= 1) {
                         if (state === 'focus') {
@@ -97,20 +96,21 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
                             saveStats(newSessions, newTotalTime, focusDuration);
                             onSessionComplete?.(focusDuration);
 
-                            toast({
-                                title: '🎉 Focus Session Complete!',
-                                description: `${focusDuration / 60} min of deep work! Take a break.`
-                            });
-
-                            // Notification
                             if ('Notification' in window && Notification.permission === 'granted') {
-                                new Notification('Focus Complete! 🎉', { body: 'Time for a break!', icon: '/favicon.svg' });
+                                new Notification('🎉 Focus Complete!', { body: `${focusDuration / 60} min done!`, icon: '/favicon.svg' });
                             }
+
+                            // Sound
+                            try {
+                                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQwwpODx2Y1PCSmo7eDGdDUHM7Tz7bhcFBRU8/r/uFoNCGH4AAD/olgOAHP5AAD5oFQRAID5AADyoFAVAIz3AADqn04ZAJP1AADhn0wcAJnzAADWn0sgAKLxAADLn0okAK/tAAC/nkYoALzpAAC0nEMtAMjlAAConfMwAPHhAACanvMzAPncAACKnPE3AP/Wmf4BAABs0QAA');
+                                audio.volume = 0.3;
+                                audio.play().catch(() => { });
+                            } catch (e) { }
 
                             setState('break');
                             return BREAK_DURATION;
                         } else {
-                            toast({ title: '⏰ Break Over', description: 'Ready for another round?' });
+                            toast({ title: '⏰ Break Over!', description: 'Ready for another?' });
                             setState('idle');
                             return selectedDuration;
                         }
@@ -128,48 +128,31 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
     const startFocus = useCallback(() => {
         setTimeRemaining(selectedDuration);
         setState('focus');
-        toast({
-            title: '🧘 Focus Mode Started',
-            description: `${selectedDuration / 60} min session. Stay focused!`
-        });
+        toast({ title: '🧘 Focus Started!', description: `${selectedDuration / 60} min session. Go!` });
     }, [selectedDuration, toast]);
 
     const pauseResume = useCallback(() => {
-        if (state === 'focus') {
-            setState('paused');
-            toast({ title: '⏸️ Paused', description: 'Timer paused' });
-        } else if (state === 'paused') {
-            setState('focus');
-            toast({ title: '▶️ Resumed', description: 'Back to focus!' });
-        }
-    }, [state, toast]);
+        setState(state === 'focus' ? 'paused' : 'focus');
+    }, [state]);
 
     const stopTimer = useCallback(() => {
         if (intervalRef.current) clearInterval(intervalRef.current);
-
-        if (state === 'focus' || state === 'paused') {
+        if ((state === 'focus' || state === 'paused') && selectedDuration - timeRemaining > 60) {
             const elapsed = selectedDuration - timeRemaining;
-            if (elapsed > 60) {
-                const newTotalTime = totalFocusTime + elapsed;
-                setTotalFocusTime(newTotalTime);
-                saveStats(sessionsCompleted, newTotalTime, elapsed);
-                toast({ title: '⏹️ Session Stopped', description: `${Math.round(elapsed / 60)} min saved.` });
-            }
+            setTotalFocusTime(t => t + elapsed);
+            saveStats(sessionsCompleted, totalFocusTime + elapsed, elapsed);
+            toast({ title: '⏹️ Stopped', description: `${Math.round(elapsed / 60)} min saved` });
         }
-
         setState('idle');
         setTimeRemaining(selectedDuration);
     }, [state, selectedDuration, timeRemaining, totalFocusTime, sessionsCompleted, saveStats, toast]);
 
-    const skipBreak = useCallback(() => {
-        if (state === 'break') {
-            setState('idle');
-            setTimeRemaining(selectedDuration);
-        }
-    }, [state, selectedDuration]);
+    // Format with separate minutes and seconds
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
 
-    // Calculate stroke dasharray for circle
-    const circumference = 2 * Math.PI * 120; // radius = 120
+    // Circle
+    const circumference = 2 * Math.PI * 120;
     const strokeDashoffset = circumference * (1 - getProgress() / 100);
 
     return (
@@ -177,127 +160,114 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
             {/* Header */}
             <div className="flex justify-between items-center p-4 border-b border-muted/20">
                 <h2 className="text-lg font-mono font-bold text-primary flex items-center gap-2">
-                    <span>🧘</span>
-                    <span>Focus Timer</span>
+                    🧘 Focus Timer
                 </h2>
-                <button onClick={onClose} className="text-muted-foreground hover:text-white text-2xl p-2 transition-colors">
-                    ✕
-                </button>
+                <button onClick={onClose} className="text-muted-foreground hover:text-white text-2xl p-2">✕</button>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col items-center justify-center p-6">
-                {/* Big Countdown Timer */}
-                <div className="relative w-72 h-72 sm:w-80 sm:h-80 mb-6">
-                    {/* Background Circle */}
+            {/* Main */}
+            <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+                {/* Timer Circle */}
+                <div className="relative w-64 h-64 sm:w-80 sm:h-80 mb-6">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 260 260">
+                        <circle cx="130" cy="130" r="120" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/20" />
                         <circle
-                            cx="130"
-                            cy="130"
-                            r="120"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="8"
-                            className="text-muted/20"
-                        />
-                        {/* Progress Circle */}
-                        <circle
-                            cx="130"
-                            cy="130"
-                            r="120"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="8"
-                            strokeLinecap="round"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={strokeDashoffset}
-                            className={`transition-all duration-500 ease-out ${state === 'break' ? 'text-cyan-500' :
-                                    state === 'focus' ? 'text-primary' :
-                                        state === 'paused' ? 'text-yellow-500' :
-                                            'text-muted/40'
+                            cx="130" cy="130" r="120" fill="none" strokeWidth="8" strokeLinecap="round"
+                            strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                            className={`transition-all duration-300 ${state === 'break' ? 'stroke-cyan-500' :
+                                    state === 'focus' ? 'stroke-primary' :
+                                        state === 'paused' ? 'stroke-yellow-500' : 'stroke-muted/40'
                                 }`}
                         />
                     </svg>
 
-                    {/* Center Content */}
+                    {/* Center - LIVE COUNTDOWN */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        {/* Big Timer Display */}
-                        <p className={`text-6xl sm:text-7xl font-mono font-bold tracking-tight ${state === 'break' ? 'text-cyan-500' :
-                                state === 'focus' ? 'text-primary' :
-                                    state === 'paused' ? 'text-yellow-500' :
-                                        'text-foreground'
-                            }`}>
-                            {formatTime(timeRemaining)}
-                        </p>
+                        {/* Big Minutes : Seconds Display */}
+                        <div className="flex items-baseline gap-1">
+                            <span className={`text-6xl sm:text-7xl font-mono font-bold tabular-nums ${state === 'break' ? 'text-cyan-500' :
+                                    state === 'focus' ? 'text-primary' :
+                                        state === 'paused' ? 'text-yellow-500' : 'text-foreground'
+                                }`}>
+                                {minutes.toString().padStart(2, '0')}
+                            </span>
+                            <span className={`text-5xl sm:text-6xl font-mono font-bold ${(state === 'focus' || state === 'break') ? 'animate-pulse' : ''
+                                } ${state === 'break' ? 'text-cyan-500' :
+                                    state === 'focus' ? 'text-primary' :
+                                        state === 'paused' ? 'text-yellow-500' : 'text-foreground'
+                                }`}>:</span>
+                            <span className={`text-6xl sm:text-7xl font-mono font-bold tabular-nums transition-all duration-100 ${state === 'break' ? 'text-cyan-500' :
+                                    state === 'focus' ? 'text-primary' :
+                                        state === 'paused' ? 'text-yellow-500' : 'text-foreground'
+                                } ${(state === 'focus' || state === 'break') && tick ? 'scale-110' : 'scale-100'}`}>
+                                {seconds.toString().padStart(2, '0')}
+                            </span>
+                        </div>
 
-                        {/* State Label */}
-                        <div className={`mt-2 px-4 py-1 rounded-full text-sm font-mono font-bold uppercase tracking-wider ${state === 'break' ? 'bg-cyan-500/20 text-cyan-400' :
-                                state === 'focus' ? 'bg-primary/20 text-primary animate-pulse' :
-                                    state === 'paused' ? 'bg-yellow-500/20 text-yellow-500' :
-                                        'bg-muted/20 text-muted-foreground'
+                        {/* State Badge */}
+                        <div className={`mt-3 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${state === 'break' ? 'bg-cyan-500/20 text-cyan-400' :
+                                state === 'focus' ? 'bg-primary/20 text-primary' :
+                                    state === 'paused' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-muted/20 text-muted-foreground'
                             }`}>
                             {state === 'idle' && '⏸ Ready'}
                             {state === 'focus' && '🔥 Focusing'}
                             {state === 'paused' && '⏸ Paused'}
-                            {state === 'break' && '☕ Break'}
+                            {state === 'break' && '☕ Break Time'}
                         </div>
+
+                        {/* Elapsed time indicator when focusing */}
+                        {(state === 'focus' || state === 'paused') && (
+                            <p className="mt-2 text-xs font-mono text-muted-foreground">
+                                {Math.floor((selectedDuration - timeRemaining) / 60)} min elapsed
+                            </p>
+                        )}
                     </div>
                 </div>
 
-                {/* Duration Selection (only in idle) */}
+                {/* Duration Selection */}
                 {state === 'idle' && (
                     <div className="flex gap-3 mb-6">
                         {FOCUS_DURATIONS.map(d => (
                             <button
                                 key={d.value}
-                                onClick={() => {
-                                    setSelectedDuration(d.value);
-                                    setTimeRemaining(d.value);
-                                }}
-                                className={`px-5 py-3 rounded-xl font-mono text-sm transition-all ${selectedDuration === d.value
-                                        ? 'bg-primary text-black font-bold scale-105'
-                                        : 'bg-muted/20 text-muted-foreground hover:text-white hover:bg-muted/30'
+                                onClick={() => { setSelectedDuration(d.value); setTimeRemaining(d.value); }}
+                                className={`px-4 py-3 rounded-xl font-mono transition-all flex flex-col items-center ${selectedDuration === d.value
+                                        ? 'bg-primary text-black font-bold scale-105 shadow-lg'
+                                        : 'bg-muted/20 text-muted-foreground hover:text-white'
                                     }`}
                             >
-                                {d.label}
+                                <span className="text-lg font-bold">{d.label}</span>
+                                <span className="text-[10px] opacity-70">{d.desc}</span>
                             </button>
                         ))}
                     </div>
                 )}
 
-                {/* Control Buttons */}
-                <div className="flex gap-4">
+                {/* Controls */}
+                <div className="flex gap-3">
                     {state === 'idle' && (
-                        <button
-                            onClick={startFocus}
-                            className="px-10 py-4 bg-primary text-black font-mono font-bold rounded-xl text-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(34,197,94,0.3)]"
-                        >
-                            ▶ START FOCUS
+                        <button onClick={startFocus}
+                            className="px-10 py-4 bg-primary text-black font-mono font-bold rounded-xl text-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                            ▶ START
                         </button>
                     )}
 
                     {(state === 'focus' || state === 'paused') && (
                         <>
-                            <button
-                                onClick={pauseResume}
-                                className="px-6 py-3 bg-yellow-500/20 text-yellow-500 border-2 border-yellow-500/50 font-mono font-bold rounded-xl hover:bg-yellow-500/30 transition-all"
-                            >
+                            <button onClick={pauseResume}
+                                className="px-6 py-3 bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 font-mono font-bold rounded-xl">
                                 {state === 'paused' ? '▶ RESUME' : '⏸ PAUSE'}
                             </button>
-                            <button
-                                onClick={stopTimer}
-                                className="px-6 py-3 bg-destructive/20 text-destructive border-2 border-destructive/50 font-mono font-bold rounded-xl hover:bg-destructive/30 transition-all"
-                            >
+                            <button onClick={stopTimer}
+                                className="px-6 py-3 bg-destructive/20 text-destructive border border-destructive/50 font-mono font-bold rounded-xl">
                                 ⏹ STOP
                             </button>
                         </>
                     )}
 
                     {state === 'break' && (
-                        <button
-                            onClick={skipBreak}
-                            className="px-6 py-3 bg-cyan-500/20 text-cyan-500 border-2 border-cyan-500/50 font-mono font-bold rounded-xl hover:bg-cyan-500/30 transition-all"
-                        >
+                        <button onClick={() => { setState('idle'); setTimeRemaining(selectedDuration); }}
+                            className="px-6 py-3 bg-cyan-500/20 text-cyan-500 border border-cyan-500/50 font-mono font-bold rounded-xl">
                             ⏭ SKIP BREAK
                         </button>
                     )}
@@ -306,15 +276,18 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
 
             {/* Stats Footer */}
             <div className="p-4 border-t border-muted/20 bg-muted/5">
-                <div className="flex justify-center gap-12 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center max-w-sm mx-auto">
                     <div>
-                        <p className="text-3xl font-mono font-bold text-primary">{sessionsCompleted}</p>
-                        <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest">Sessions</p>
+                        <p className="text-2xl font-mono font-bold text-primary">{sessionsCompleted}</p>
+                        <p className="text-[10px] font-mono text-muted-foreground uppercase">Today</p>
                     </div>
-                    <div className="w-px bg-muted/30" />
+                    <div className="border-x border-muted/30">
+                        <p className="text-2xl font-mono font-bold text-cyan-500">{Math.round(totalFocusTime / 60)}</p>
+                        <p className="text-[10px] font-mono text-muted-foreground uppercase">Minutes</p>
+                    </div>
                     <div>
-                        <p className="text-3xl font-mono font-bold text-cyan-500">{Math.round(totalFocusTime / 60)}</p>
-                        <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest">Minutes</p>
+                        <p className="text-2xl font-mono font-bold text-yellow-500">{weeklyStats?.totalSessions || 0}</p>
+                        <p className="text-[10px] font-mono text-muted-foreground uppercase">Week</p>
                     </div>
                 </div>
             </div>

@@ -13,7 +13,6 @@ import { RecoveryLock } from "@/components/RecoveryLock";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 // New Features
-import { VoiceLogger } from "@/components/VoiceLogger";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { FocusTimer } from "@/components/FocusTimer";
 import { DataExport } from "@/components/DataExport";
@@ -539,19 +538,6 @@ const Index = () => {
               <span>📤</span>
               <span className="hidden sm:inline">Export</span>
             </button>
-            {/* Voice Logger */}
-            <VoiceLogger
-              disabled={todayCheckedIn || isLoading}
-              onHealthParsed={(health) => {
-                // Apply parsed health data using handleLogCategory
-                if (health.water) handleLogCategory('water', health.water === 'OK' ? 'hydrated' : 'none', health.water);
-                if (health.food) handleLogCategory('food', health.food === 'OK' ? 'full' : 'none', health.food);
-                if (health.sleep) handleLogCategory('sleep', health.sleep === 'OK' ? 'good' : 'bad', health.sleep);
-                if (health.exercise) handleLogCategory('exercise', health.exercise === 'DONE' ? 'done' : 'skipped', health.exercise);
-                if (health.mentalLoad) handleLogCategory('mental', health.mentalLoad === 'LOW' ? 'light' : health.mentalLoad === 'OK' ? 'moderate' : 'heavy', health.mentalLoad);
-                toast({ title: '🎙️ Voice Log Applied', description: 'Health data updated from speech.' });
-              }}
-            />
           </div>
         </div>
 
