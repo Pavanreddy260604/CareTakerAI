@@ -376,4 +376,58 @@ export const api = {
     async recalculateBaseline(): Promise<{ success: boolean; baseline?: any; message?: string }> {
         return authFetch(`${API_BASE_URL}/baseline/recalculate`, { method: 'POST' });
     },
+
+    // PHASE 4: Insights
+    async getWeeklySummary(): Promise<{
+        hasEnoughData: boolean;
+        message?: string;
+        daysLogged?: number;
+        period?: { start: string; end: string; daysLogged: number };
+        overview?: {
+            avgCapacity: number;
+            sleepQualityRate: number;
+            hydrationRate: number;
+            exerciseRate: number;
+            stressRate: number;
+            totalCheckIns: number;
+        };
+        bestDay?: { date: string; dayName: string; capacity: number; reason: string };
+        worstDay?: { date: string; dayName: string; capacity: number; reason: string };
+        patterns?: Array<{
+            type: string;
+            category: string;
+            message: string;
+            icon: string;
+            severity: string;
+        }>;
+        dayOfWeekAnalysis?: {
+            insights: Array<{ type: string; message: string; suggestion: string }>;
+            weakestDay: string;
+            strongestDay: string;
+        };
+        correlations?: Array<{
+            factor: string;
+            impact: string;
+            difference: number;
+            message: string;
+        }>;
+        recommendations?: Array<{
+            priority: string;
+            category: string;
+            action: string;
+            reason: string;
+        }>;
+    }> {
+        return authFetch(`${API_BASE_URL}/insights/weekly`, {});
+    },
+
+    async getMonthlyTrends(): Promise<{
+        hasEnoughData: boolean;
+        weeks?: Array<{ week: number; avgCapacity: number; daysLogged: number }>;
+        trend?: 'improving' | 'stable' | 'declining';
+        totalDays?: number;
+        error?: string;
+    }> {
+        return authFetch(`${API_BASE_URL}/insights/monthly`, {});
+    },
 };

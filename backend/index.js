@@ -21,6 +21,7 @@ const { addMemory, queryMemory, storeWeeklyReflection } = require('./src/service
 const { getEngagementData } = require('./src/services/engagementService');
 const { getFullAnalytics } = require('./src/services/analyticsService');
 const { getBaseline, compareToBaseline, getUserGoals, updateUserGoals, calculateBaseline } = require('./src/services/baselineService');
+const { generateWeeklySummary, getMonthlyTrends } = require('./src/services/insightsService');
 
 // Middleware
 const authMiddleware = require('./src/middleware/auth');
@@ -677,6 +678,34 @@ app.post('/api/baseline/compare', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Compare Baseline Error:', error);
         res.status(500).json({ error: 'Failed to compare to baseline' });
+    }
+});
+
+// ============================================
+// PHASE 4: INSIGHTS & ANALYTICS
+// ============================================
+
+// API Endpoint: Get Weekly Summary (PROTECTED)
+app.get('/api/insights/weekly', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const summary = await generateWeeklySummary(userId);
+        res.json(summary);
+    } catch (error) {
+        console.error('Weekly Summary Error:', error);
+        res.status(500).json({ error: 'Failed to generate weekly summary' });
+    }
+});
+
+// API Endpoint: Get Monthly Trends (PROTECTED)
+app.get('/api/insights/monthly', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const trends = await getMonthlyTrends(userId);
+        res.json(trends);
+    } catch (error) {
+        console.error('Monthly Trends Error:', error);
+        res.status(500).json({ error: 'Failed to get monthly trends' });
     }
 });
 

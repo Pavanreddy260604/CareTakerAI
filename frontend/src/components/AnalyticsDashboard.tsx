@@ -37,7 +37,9 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'trends' | 'weekly'>('trends');
+    const [activeTab, setActiveTab] = useState<'trends' | 'weekly' | 'insights'>('trends');
+    const [weeklyInsights, setWeeklyInsights] = useState<any>(null);
+    const [insightsLoading, setInsightsLoading] = useState(false);
 
     useEffect(() => {
         const fetchAnalytics = async () => {
@@ -120,6 +122,27 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                             }`}
                     >
                         Weekly Summary
+                    </button>
+                    <button
+                        onClick={async () => {
+                            setActiveTab('insights');
+                            if (!weeklyInsights && !insightsLoading) {
+                                setInsightsLoading(true);
+                                try {
+                                    const insights = await api.getWeeklySummary();
+                                    setWeeklyInsights(insights);
+                                } catch (e) {
+                                    console.error('Failed to load insights:', e);
+                                }
+                                setInsightsLoading(false);
+                            }
+                        }}
+                        className={`px-4 py-2.5 font-mono text-sm rounded-xl transition-all whitespace-nowrap ${activeTab === 'insights'
+                            ? 'bg-cyan-500 text-black font-bold'
+                            : 'bg-muted/20 text-muted-foreground hover:text-white'
+                            }`}
+                    >
+                        🧠 AI Insights
                     </button>
                 </div>
 
@@ -262,6 +285,152 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                 </p>
                                 <p className="text-[11px] text-muted-foreground/70 mt-1">
                                     Start logging to see weekly insights
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* AI Insights Tab */}
+                {activeTab === 'insights' && (
+                    <div className="space-y-4">
+                        {insightsLoading ? (
+                            <div className="text-center py-12">
+                                <div className="w-10 h-10 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                                <p className="text-cyan-500 font-mono text-sm">Analyzing your data...</p>
+                            </div>
+                        ) : weeklyInsights?.hasEnoughData ? (
+                            <>
+                                {/* Overview Stats */}
+                                {weeklyInsights.overview && (
+                                    <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-xl p-4 sm:p-5">
+                                        <p className="text-[10px] font-mono text-cyan-500 uppercase tracking-widest mb-4">
+                                            📊 Weekly Overview
+                                        </p>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div className="text-center">
+                                                <p className="text-2xl font-mono font-bold text-cyan-500">{weeklyInsights.overview.avgCapacity}%</p>
+                                                <p className="text-[10px] text-muted-foreground">Avg Capacity</p>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-2xl font-mono font-bold text-primary">{weeklyInsights.overview.sleepQualityRate}%</p>
+                                                <p className="text-[10px] text-muted-foreground">Good Sleep</p>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-2xl font-mono font-bold text-yellow-500">{weeklyInsights.overview.stressRate}%</p>
+                                                <p className="text-[10px] text-muted-foreground">High Stress</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Best & Worst Days */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    {weeklyInsights.bestDay && (
+                                        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
+                                            <p className="text-[10px] font-mono text-primary uppercase mb-2">🏆 Best Day</p>
+                                            <p className="text-lg font-bold font-mono text-primary">{weeklyInsights.bestDay.dayName}</p>
+                                            <p className="text-sm text-muted-foreground">{weeklyInsights.bestDay.capacity}% capacity</p>
+                                            <p className="text-[10px] text-muted-foreground mt-1">{weeklyInsights.bestDay.reason}</p>
+                                        </div>
+                                    )}
+                                    {weeklyInsights.worstDay && (
+                                        <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4">
+                                            <p className="text-[10px] font-mono text-destructive uppercase mb-2">📉 Needs Work</p>
+                                            <p className="text-lg font-bold font-mono text-destructive">{weeklyInsights.worstDay.dayName}</p>
+                                            <p className="text-sm text-muted-foreground">{weeklyInsights.worstDay.capacity}% capacity</p>
+                                            <p className="text-[10px] text-muted-foreground mt-1">{weeklyInsights.worstDay.reason}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Patterns */}
+                                {weeklyInsights.patterns && weeklyInsights.patterns.length > 0 && (
+                                    <div className="bg-[#0a0a0a] border border-muted/30 rounded-xl p-4 sm:p-5">
+                                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-4">
+                                            🔍 Detected Patterns
+                                        </p>
+                                        <div className="space-y-2">
+                                            {weeklyInsights.patterns.map((pattern: any, idx: number) => (
+                                                <div
+                                                    key={idx}
+                                                    className={`p-3 rounded-xl flex items-start gap-3 ${pattern.type === 'positive'
+                                                            ? 'bg-primary/10 border border-primary/30'
+                                                            : 'bg-yellow-500/10 border border-yellow-500/30'
+                                                        }`}
+                                                >
+                                                    <span className="text-xl">{pattern.icon}</span>
+                                                    <p className="text-sm font-mono">{pattern.message}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Correlations */}
+                                {weeklyInsights.correlations && weeklyInsights.correlations.length > 0 && (
+                                    <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-xl p-4 sm:p-5">
+                                        <p className="text-[10px] font-mono text-cyan-500 uppercase tracking-widest mb-4">
+                                            🔗 Correlations Found
+                                        </p>
+                                        <div className="space-y-3">
+                                            {weeklyInsights.correlations.map((corr: any, idx: number) => (
+                                                <div key={idx} className="flex items-center gap-3 p-3 bg-cyan-500/5 rounded-lg">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${corr.impact === 'positive' ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'
+                                                        }`}>
+                                                        {corr.impact === 'positive' ? '+' : '-'}{corr.difference}%
+                                                    </div>
+                                                    <p className="text-sm font-mono text-muted-foreground">{corr.message}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Recommendations */}
+                                {weeklyInsights.recommendations && weeklyInsights.recommendations.length > 0 && (
+                                    <div className="bg-[#0a0a0a] border border-primary/30 rounded-xl p-4 sm:p-5">
+                                        <p className="text-[10px] font-mono text-primary uppercase tracking-widest mb-4">
+                                            💡 Recommendations
+                                        </p>
+                                        <div className="space-y-3">
+                                            {weeklyInsights.recommendations.map((rec: any, idx: number) => (
+                                                <div key={idx} className="p-3 bg-primary/5 rounded-lg border-l-4 border-primary">
+                                                    <p className="text-sm font-mono font-bold text-primary">{rec.action}</p>
+                                                    <p className="text-[11px] text-muted-foreground mt-1">{rec.reason}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Day of Week Analysis */}
+                                {weeklyInsights.dayOfWeekAnalysis?.insights?.length > 0 && (
+                                    <div className="bg-[#0a0a0a] border border-muted/30 rounded-xl p-4 sm:p-5">
+                                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-4">
+                                            📅 Day-of-Week Patterns
+                                        </p>
+                                        <div className="space-y-2">
+                                            {weeklyInsights.dayOfWeekAnalysis.insights.map((insight: any, idx: number) => (
+                                                <div key={idx} className="p-3 bg-muted/10 rounded-lg">
+                                                    <p className="text-sm font-mono">{insight.message}</p>
+                                                    <p className="text-[10px] text-primary mt-1">💡 {insight.suggestion}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-center py-12">
+                                <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
+                                    <span className="text-3xl">🧠</span>
+                                </div>
+                                <p className="text-muted-foreground font-mono">
+                                    {weeklyInsights?.message || 'Need at least 3 days of data for insights'}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground/70 mt-1">
+                                    Keep checking in daily to unlock AI insights
                                 </p>
                             </div>
                         )}

@@ -1,0 +1,490 @@
+/**
+ * backend/src/services/insightsService.js
+ * Weekly Insights & Pattern Detection
+ */
+const HealthLog = require('../models/HealthLog');
+const User = require('../models/User');
+
+/**
+ * Generate weekly summary with insights
+ */
+async function generateWeeklySummary(userId) {
+    try {
+        // Get last 7 days of logs
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const logs = await HealthLog.find({
+            userId,
+            date: { $gte: weekAgo }
+        }).sort({ date: -1 });
+
+        if (logs.length < 3) {
+            return {
+                hasEnoughData: false,
+                message: 'Need at least 3 days of data for weekly summary',
+                daysLogged: logs.length
+            };
+        }
+
+        // Calculate metrics
+        const summary = {
+            hasEnoughData: true,
+            period: {
+                start: weekAgo.toISOString().split('T')[0],
+                end: new Date().toISOString().split('T')[0],
+                daysLogged: logs.length
+            },
+            overview: calculateOverview(logs),
+            bestDay: findBestDay(logs),
+            worstDay: findWorstDay(logs),
+            patterns: detectPatterns(logs),
+            dayOfWeekAnalysis: analyzeDayOfWeek(logs),
+            correlations: findCorrelations(logs),
+            recommendations: generateRecommendations(logs),
+            progressVsLastWeek: null // Would need previous week data
+        };
+
+        return summary;
+    } catch (error) {
+        console.error('Weekly summary error:', error);
+        return { hasEnoughData: false, error: error.message };
+    }
+}
+
+/**
+ * Calculate overview metrics
+ */
+function calculateOverview(logs) {
+    let totalCapacity = 0;
+    let capacityCount = 0;
+    let sleepOk = 0;
+    let waterOk = 0;
+    let exerciseDone = 0;
+    let highStress = 0;
+
+    logs.forEach(log => {
+        if (log.aiResponse?.metrics?.capacity) {
+            totalCapacity += log.aiResponse.metrics.capacity;
+            capacityCount++;
+        }
+        if (log.health?.sleep === 'OK') sleepOk++;
+        if (log.health?.water === 'OK') waterOk++;
+        if (log.health?.exercise === 'DONE') exerciseDone++;
+        if (log.health?.mentalLoad === 'HIGH') highStress++;
+    });
+
+    const total = logs.length;
+
+    return {
+        avgCapacity: capacityCount > 0 ? Math.round(totalCapacity / capacityCount) : null,
+        sleepQualityRate: Math.round((sleepOk / total) * 100),
+        hydrationRate: Math.round((waterOk / total) * 100),
+        exerciseRate: Math.round((exerciseDone / total) * 100),
+        stressRate: Math.round((highStress / total) * 100),
+        totalCheckIns: total
+    };
+}
+
+/**
+ * Find best day of the week
+ */
+function findBestDay(logs) {
+    let best = null;
+    let bestCapacity = 0;
+
+    logs.forEach(log => {
+        const capacity = log.aiResponse?.metrics?.capacity || 0;
+        if (capacity > bestCapacity) {
+            bestCapacity = capacity;
+            best = {
+                date: log.date,
+                dayName: new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' }),
+                capacity: capacity,
+                reason: determineDayReason(log, 'best')
+            };
+        }
+    });
+
+    return best;
+}
+
+/**
+ * Find worst day of the week
+ */
+function findWorstDay(logs) {
+    let worst = null;
+    let worstCapacity = 100;
+
+    logs.forEach(log => {
+        const capacity = log.aiResponse?.metrics?.capacity || 100;
+        if (capacity < worstCapacity && capacity > 0) {
+            worstCapacity = capacity;
+            worst = {
+                date: log.date,
+                dayName: new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' }),
+                capacity: capacity,
+                reason: determineDayReason(log, 'worst')
+            };
+        }
+    });
+
+    return worst;
+}
+
+/**
+ * Determine reason for best/worst day
+ */
+function determineDayReason(log, type) {
+    const reasons = [];
+
+    if (type === 'best') {
+        if (log.health?.sleep === 'OK') reasons.push('good sleep');
+        if (log.health?.water === 'OK') reasons.push('proper hydration');
+        if (log.health?.exercise === 'DONE') reasons.push('exercised');
+        if (log.health?.mentalLoad !== 'HIGH') reasons.push('managed stress');
+    } else {
+        if (log.health?.sleep === 'LOW') reasons.push('poor sleep');
+        if (log.health?.water === 'LOW') reasons.push('dehydration');
+        if (log.health?.mentalLoad === 'HIGH') reasons.push('high stress');
+        if (log.health?.food === 'LOW') reasons.push('poor nutrition');
+    }
+
+    return reasons.length > 0 ? reasons.join(', ') : 'multiple factors';
+}
+
+/**
+ * Detect patterns in the data
+ */
+function detectPatterns(logs) {
+    const patterns = [];
+
+    // Check for consecutive issues
+    let consecutiveLowSleep = 0;
+    let consecutiveHighStress = 0;
+    let consecutiveLowWater = 0;
+
+    logs.forEach(log => {
+        if (log.health?.sleep === 'LOW') consecutiveLowSleep++;
+        else consecutiveLowSleep = 0;
+
+        if (log.health?.mentalLoad === 'HIGH') consecutiveHighStress++;
+        else consecutiveHighStress = 0;
+
+        if (log.health?.water === 'LOW') consecutiveLowWater++;
+        else consecutiveLowWater = 0;
+    });
+
+    if (consecutiveLowSleep >= 3) {
+        patterns.push({
+            type: 'warning',
+            category: 'sleep',
+            message: `${consecutiveLowSleep} consecutive days of poor sleep`,
+            icon: '😴',
+            severity: 'high'
+        });
+    }
+
+    if (consecutiveHighStress >= 3) {
+        patterns.push({
+            type: 'warning',
+            category: 'mental',
+            message: `${consecutiveHighStress} consecutive days of high stress`,
+            icon: '🧠',
+            severity: 'high'
+        });
+    }
+
+    if (consecutiveLowWater >= 2) {
+        patterns.push({
+            type: 'warning',
+            category: 'hydration',
+            message: `${consecutiveLowWater} consecutive days of low hydration`,
+            icon: '💧',
+            severity: 'medium'
+        });
+    }
+
+    // Check for exercise patterns
+    const exerciseDays = logs.filter(l => l.health?.exercise === 'DONE').length;
+    if (exerciseDays >= 5) {
+        patterns.push({
+            type: 'positive',
+            category: 'exercise',
+            message: `Great exercise habit! ${exerciseDays}/7 days active`,
+            icon: '💪',
+            severity: 'positive'
+        });
+    } else if (exerciseDays <= 1 && logs.length >= 5) {
+        patterns.push({
+            type: 'warning',
+            category: 'exercise',
+            message: 'Very low physical activity this week',
+            icon: '🏃',
+            severity: 'medium'
+        });
+    }
+
+    return patterns;
+}
+
+/**
+ * Analyze performance by day of week
+ */
+function analyzeDayOfWeek(logs) {
+    const dayStats = {
+        'Sunday': { total: 0, capacitySum: 0, count: 0 },
+        'Monday': { total: 0, capacitySum: 0, count: 0 },
+        'Tuesday': { total: 0, capacitySum: 0, count: 0 },
+        'Wednesday': { total: 0, capacitySum: 0, count: 0 },
+        'Thursday': { total: 0, capacitySum: 0, count: 0 },
+        'Friday': { total: 0, capacitySum: 0, count: 0 },
+        'Saturday': { total: 0, capacitySum: 0, count: 0 }
+    };
+
+    logs.forEach(log => {
+        const dayName = new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' });
+        if (dayStats[dayName]) {
+            dayStats[dayName].total++;
+            if (log.aiResponse?.metrics?.capacity) {
+                dayStats[dayName].capacitySum += log.aiResponse.metrics.capacity;
+                dayStats[dayName].count++;
+            }
+        }
+    });
+
+    // Calculate averages and find patterns
+    const analysis = [];
+    let lowestDay = null;
+    let lowestAvg = 100;
+    let highestDay = null;
+    let highestAvg = 0;
+
+    Object.keys(dayStats).forEach(day => {
+        const stats = dayStats[day];
+        if (stats.count > 0) {
+            const avg = Math.round(stats.capacitySum / stats.count);
+            if (avg < lowestAvg) {
+                lowestAvg = avg;
+                lowestDay = day;
+            }
+            if (avg > highestAvg) {
+                highestAvg = avg;
+                highestDay = day;
+            }
+        }
+    });
+
+    if (lowestDay && lowestAvg < 60) {
+        analysis.push({
+            type: 'insight',
+            message: `${lowestDay}s tend to be your weakest day (avg ${lowestAvg}% capacity)`,
+            suggestion: `Consider preparing extra for ${lowestDay}s`
+        });
+    }
+
+    if (highestDay && highestAvg > 70) {
+        analysis.push({
+            type: 'insight',
+            message: `${highestDay}s are typically your best (avg ${highestAvg}% capacity)`,
+            suggestion: 'Schedule important tasks on this day'
+        });
+    }
+
+    return {
+        byDay: dayStats,
+        insights: analysis,
+        weakestDay: lowestDay,
+        strongestDay: highestDay
+    };
+}
+
+/**
+ * Find correlations between behaviors and outcomes
+ */
+function findCorrelations(logs) {
+    const correlations = [];
+
+    // Group logs by exercised vs not
+    const exercisedDays = logs.filter(l => l.health?.exercise === 'DONE');
+    const noExerciseDays = logs.filter(l => l.health?.exercise === 'PENDING');
+
+    if (exercisedDays.length >= 2 && noExerciseDays.length >= 2) {
+        const avgWithExercise = calculateAvgCapacity(exercisedDays);
+        const avgWithoutExercise = calculateAvgCapacity(noExerciseDays);
+        const difference = avgWithExercise - avgWithoutExercise;
+
+        if (Math.abs(difference) >= 5) {
+            correlations.push({
+                factor: 'exercise',
+                impact: difference > 0 ? 'positive' : 'negative',
+                difference: Math.abs(difference),
+                message: difference > 0
+                    ? `Days with exercise show ${difference}% higher capacity`
+                    : `Exercise days show ${Math.abs(difference)}% lower capacity (possible overexertion)`
+            });
+        }
+    }
+
+    // Sleep correlation
+    const goodSleepDays = logs.filter(l => l.health?.sleep === 'OK');
+    const badSleepDays = logs.filter(l => l.health?.sleep === 'LOW');
+
+    if (goodSleepDays.length >= 2 && badSleepDays.length >= 2) {
+        const avgGoodSleep = calculateAvgCapacity(goodSleepDays);
+        const avgBadSleep = calculateAvgCapacity(badSleepDays);
+        const difference = avgGoodSleep - avgBadSleep;
+
+        if (difference >= 10) {
+            correlations.push({
+                factor: 'sleep',
+                impact: 'positive',
+                difference: difference,
+                message: `Good sleep = ${difference}% higher capacity`
+            });
+        }
+    }
+
+    // Stress correlation
+    const lowStressDays = logs.filter(l => l.health?.mentalLoad !== 'HIGH');
+    const highStressDays = logs.filter(l => l.health?.mentalLoad === 'HIGH');
+
+    if (lowStressDays.length >= 2 && highStressDays.length >= 2) {
+        const avgLowStress = calculateAvgCapacity(lowStressDays);
+        const avgHighStress = calculateAvgCapacity(highStressDays);
+        const difference = avgLowStress - avgHighStress;
+
+        if (difference >= 10) {
+            correlations.push({
+                factor: 'stress',
+                impact: 'negative',
+                difference: difference,
+                message: `High stress days have ${difference}% lower capacity`
+            });
+        }
+    }
+
+    return correlations;
+}
+
+/**
+ * Calculate average capacity from logs
+ */
+function calculateAvgCapacity(logs) {
+    let sum = 0;
+    let count = 0;
+    logs.forEach(log => {
+        if (log.aiResponse?.metrics?.capacity) {
+            sum += log.aiResponse.metrics.capacity;
+            count++;
+        }
+    });
+    return count > 0 ? Math.round(sum / count) : 0;
+}
+
+/**
+ * Generate personalized recommendations
+ */
+function generateRecommendations(logs) {
+    const recommendations = [];
+    const overview = calculateOverview(logs);
+
+    if (overview.sleepQualityRate < 50) {
+        recommendations.push({
+            priority: 'high',
+            category: 'sleep',
+            action: 'Establish a consistent bedtime routine',
+            reason: `Only ${overview.sleepQualityRate}% of days had good sleep`
+        });
+    }
+
+    if (overview.hydrationRate < 60) {
+        recommendations.push({
+            priority: 'medium',
+            category: 'hydration',
+            action: 'Set hourly water reminders',
+            reason: `Hydration was low ${100 - overview.hydrationRate}% of the week`
+        });
+    }
+
+    if (overview.exerciseRate < 40 && logs.length >= 5) {
+        recommendations.push({
+            priority: 'medium',
+            category: 'exercise',
+            action: 'Start with 10-minute daily walks',
+            reason: `Only ${overview.exerciseRate}% exercise rate this week`
+        });
+    }
+
+    if (overview.stressRate > 50) {
+        recommendations.push({
+            priority: 'high',
+            category: 'mental',
+            action: 'Add 5-minute daily meditation',
+            reason: `High stress on ${overview.stressRate}% of days`
+        });
+    }
+
+    return recommendations;
+}
+
+/**
+ * Get monthly trends
+ */
+async function getMonthlyTrends(userId) {
+    try {
+        const monthAgo = new Date();
+        monthAgo.setDate(monthAgo.getDate() - 30);
+
+        const logs = await HealthLog.find({
+            userId,
+            date: { $gte: monthAgo }
+        }).sort({ date: 1 });
+
+        if (logs.length < 7) {
+            return { hasEnoughData: false };
+        }
+
+        // Calculate weekly averages for trend
+        const weeks = [];
+        for (let i = 0; i < 4; i++) {
+            const weekStart = i * 7;
+            const weekLogs = logs.slice(weekStart, weekStart + 7);
+            if (weekLogs.length > 0) {
+                weeks.push({
+                    week: i + 1,
+                    avgCapacity: calculateAvgCapacity(weekLogs),
+                    daysLogged: weekLogs.length
+                });
+            }
+        }
+
+        // Calculate trend direction
+        let trend = 'stable';
+        if (weeks.length >= 2) {
+            const firstWeek = weeks[0].avgCapacity;
+            const lastWeek = weeks[weeks.length - 1].avgCapacity;
+            const diff = lastWeek - firstWeek;
+            if (diff > 10) trend = 'improving';
+            else if (diff < -10) trend = 'declining';
+        }
+
+        return {
+            hasEnoughData: true,
+            weeks,
+            trend,
+            totalDays: logs.length
+        };
+    } catch (error) {
+        console.error('Monthly trends error:', error);
+        return { hasEnoughData: false, error: error.message };
+    }
+}
+
+module.exports = {
+    generateWeeklySummary,
+    getMonthlyTrends,
+    calculateOverview,
+    findCorrelations,
+    detectPatterns
+};
