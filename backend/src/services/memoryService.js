@@ -177,8 +177,12 @@ async function getMemoryCallback(userId, currentState) {
         return callback;
     }
 
-    console.log("Supermemory: Raw memory returned (no structured match)");
-    return { message: topMemory.content, raw: true };
+    // Fallback if structured parsing fails but we have content
+    console.log("Supermemory: Raw memory returned (using raw content)");
+    return {
+        message: `Recall from your history: ${topMemory.content.substring(0, 100)}...`,
+        isNewUser: false
+    };
 }
 
 /**
