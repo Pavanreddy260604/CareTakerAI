@@ -94,7 +94,7 @@ const Index = () => {
   } | null>(null);
   const [bioMetrics, setBioMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(Object.keys(TASK_CATEGORIES).length);
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showWeeklyReview, setShowWeeklyReview] = useState(false);
@@ -231,7 +231,7 @@ const Index = () => {
           }
         } else {
           setTodayCheckedIn(false);
-          setCurrentTaskIndex(categories.length);
+          setCurrentTaskIndex(0);
         }
 
       } catch (error: any) {
