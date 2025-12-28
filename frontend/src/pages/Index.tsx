@@ -141,12 +141,13 @@ const Index = () => {
       const diff = tomorrow.getTime() - now.getTime();
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-      setNextCheckInTime(`${hours}h ${minutes}m`);
+      setNextCheckInTime(`${hours}h ${minutes}m ${seconds}s`);
     };
 
     updateCountdown();
-    const interval = setInterval(updateCountdown, 60000); // Update every minute
+    const interval = setInterval(updateCountdown, 1000); // Update every second
     return () => clearInterval(interval);
   }, [todayCheckedIn]);
 
