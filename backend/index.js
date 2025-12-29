@@ -18,7 +18,7 @@ const FocusSession = require('./src/models/FocusSession');
 
 // Services
 const { isRecoveryRequired, getHighestPriorityAction, getContinuityState, calculateBiologicalMetrics, generateDecision } = require('./src/services/rulesService');
-const { processHealthData } = require('./src/services/aiService');
+const { processHealthData, generateMentalLoadQuestion, analyzeMentalLoadAnswer } = require('./src/services/aiService');
 const { addMemory, queryMemory, storeWeeklyReflection } = require('./src/services/memoryService');
 const { getEngagementData } = require('./src/services/engagementService');
 const { getFullAnalytics } = require('./src/services/analyticsService');
@@ -149,12 +149,100 @@ app.get('/api/user/stats', authMiddleware, async (req, res) => {
             latestLog: todayLog,
             totalCheckIns: logs.length,
             metrics: decisionObject.decision,
-            mode: userMode
+            mode: userMode,
+            hydration: user.hydration,
+            goals: user.goals
         });
 
     } catch (error) {
         console.error('Stats Error:', error);
         res.status(500).json({ error: 'Failed to get stats' });
+    }
+});
+
+// API Endpoint: Log Water Intake
+app.post('/api/user/water', authMiddleware, async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Ensure hydration object exists
+        if (!user.hydration) {
+            user.hydration = {
+                remindersEnabled: false,
+                reminderInterval: 60,
+                incrementAmount: 250,
+                currentIntake: 0,
+                lastReset: new Date()
+            };
+        }
+
+        // Daily Reset Check
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lastReset = new Date(user.hydration.lastReset || user.createdAt);
+        lastReset.setHours(0, 0, 0, 0);
+
+        if (today.getTime() > lastReset.getTime()) {
+            user.hydration.currentIntake = amount || user.hydration.incrementAmount;
+            user.hydration.lastReset = new Date();
+        } else {
+            user.hydration.currentIntake += (amount || user.hydration.incrementAmount);
+        }
+
+        await user.save();
+        res.json({
+            currentIntake: user.hydration.currentIntake,
+            goal: (user.goals?.targetWaterLiters || 2) * 1000,
+            settings: user.hydration
+        });
+    } catch (error) {
+        console.error('Water log error:', error);
+        res.status(500).json({ error: 'Failed to log water' });
+    }
+});
+
+// API Endpoint: Update Hydration Settings
+app.put('/api/user/hydration-settings', authMiddleware, async (req, res) => {
+    try {
+        const { remindersEnabled, reminderInterval, incrementAmount } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (!user.hydration) user.hydration = {};
+
+        if (remindersEnabled !== undefined) user.hydration.remindersEnabled = remindersEnabled;
+        if (reminderInterval !== undefined) user.hydration.reminderInterval = reminderInterval;
+        if (incrementAmount !== undefined) user.hydration.incrementAmount = incrementAmount;
+
+        await user.save();
+        res.json({ success: true, settings: user.hydration });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update settings' });
+    }
+});
+
+// API Endpoint: Get AI Mental Load Question
+app.get('/api/ai/mental-load-question', authMiddleware, async (req, res) => {
+    try {
+        const result = await generateMentalLoadQuestion(req.user.id);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate question' });
+    }
+});
+
+// API Endpoint: Analyze Mental Load Answer
+app.post('/api/ai/mental-load-analysis', authMiddleware, async (req, res) => {
+    try {
+        const { answer } = req.body;
+        if (!answer) return res.status(400).json({ error: 'Answer is required' });
+
+        const status = await analyzeMentalLoadAnswer(answer);
+        res.json({ status });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to analyze answer' });
     }
 });
 

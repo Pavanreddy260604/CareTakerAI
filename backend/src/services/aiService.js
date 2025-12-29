@@ -6,6 +6,7 @@ const path = require('path');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { getMemoryCallback, addStructuredHealthMemory } = require('./memoryService');
 const { compareToBaseline, getUserGoals } = require('./baselineService');
+const { detectUserPatterns } = require('./patternService');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
@@ -17,7 +18,7 @@ let genAI = null;
 let geminiModel = null;
 if (AI_PROVIDER === 'GEMINI' && process.env.GEMINI_API_KEY) {
     genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 }
 
 // ============================================
@@ -157,6 +158,12 @@ async function processHealthData(context) {
             userGoals = await getUserGoals(context.userId);
         }
 
+        // PHASE 4: Detect user patterns
+        let userPatterns = null;
+        if (context.userId) {
+            userPatterns = await detectUserPatterns(context.userId, context.health);
+        }
+
         // Calculate trend summary
         const trendSummary = calculateTrendSummary(context);
 
@@ -167,7 +174,7 @@ async function processHealthData(context) {
         let aiResult = null;
 
         if (AI_PROVIDER === 'GEMINI' && geminiModel) {
-            aiResult = await callGeminiStructured(context, timeOfDay, memoryContext, trendSummary, baselineComparison, userGoals);
+            aiResult = await callGeminiStructured(context, timeOfDay, memoryContext, trendSummary, baselineComparison, userGoals, userPatterns);
         } else {
             aiResult = await callLocalMistral(context, timeOfDay, memoryContext, trendSummary);
         }
@@ -201,7 +208,7 @@ async function processHealthData(context) {
 // ============================================
 // STRUCTURED GEMINI CALL
 // ============================================
-async function callGeminiStructured(context, timeOfDay, memoryContext, trendSummary, baselineComparison, userGoals) {
+async function callGeminiStructured(context, timeOfDay, memoryContext, trendSummary, baselineComparison, userGoals, userPatterns) {
     // Build baseline context string
     let baselineContext = '';
     if (baselineComparison && baselineComparison.hasBaseline) {
@@ -223,42 +230,48 @@ USER GOALS:
 - Target exercise: ${userGoals.targetExerciseDays} days/week`;
     }
 
-    const prompt = `You are the Caretaker AI - a personalized health strategist who knows this user's patterns.
+    const prompt = `You are a caring, wise friend who knows this person deeply. You've been watching their health patterns and you genuinely care about their wellbeing.
 
-CURRENT STATUS:
-- Capacity: ${context.decision.capacity}%
-- System Mode: ${context.decision.systemMode}
-- Required Action: ${context.decision.requiredAction}
-- Time of Day: ${timeOfDay}
+YOUR PERSONALITY:
+- Warm and supportive, like a trusted friend
+- Direct but kind - no fluff, real talk
+- Acknowledge their struggles with empathy
+- Celebrate their wins, no matter how small
+- Reference their personal patterns naturally (not robotically)
 
-HEALTH DATA TODAY:
-- Sleep: ${context.health.sleep}
-- Water: ${context.health.water}
-- Food: ${context.health.food}
-- Exercise: ${context.health.exercise}
-- Mental Load: ${context.health.mentalLoad}
+WHAT YOU KNOW ABOUT THEM RIGHT NOW:
+- Energy Level: ${context.decision.capacity}% (${context.decision.capacity < 30 ? 'they\'re running on empty' : context.decision.capacity < 50 ? 'they\'re struggling' : context.decision.capacity < 70 ? 'they\'re doing okay' : 'they\'re in great shape'})
+- Time: ${timeOfDay}
+- Sleep: ${context.health.sleep === 'LOW' ? 'Didn\'t sleep well' : 'Slept okay'}
+- Hydration: ${context.health.water === 'LOW' ? 'Not drinking enough water' : 'Hydrated'}
+- Food: ${context.health.food === 'LOW' ? 'Haven\'t eaten properly' : 'Eating well'}
+- Exercise: ${context.health.exercise === 'DONE' ? 'Got some movement in' : 'No exercise yet'}
+- Stress: ${context.health.mentalLoad === 'HIGH' ? 'Feeling overwhelmed' : context.health.mentalLoad === 'MEDIUM' ? 'Moderate stress' : 'Calm'}
 
-TREND DATA: ${trendSummary}
-${baselineContext}
-${goalsContext}
-${memoryContext ? `USER MEMORY: ${memoryContext.message}` : ''}
+THEIR RECENT STORY: ${trendSummary}
+${baselineContext ? `\nWHAT'S NORMAL FOR THEM:\n${baselineContext}` : ''}
+${goalsContext ? `\nWHAT THEY'RE WORKING TOWARD:\n${goalsContext}` : ''}
+${memoryContext ? `\nYOU REMEMBER: ${memoryContext.message}` : ''}
+${userPatterns?.hasEnoughData ? `\nPATTERNS YOU'VE NOTICED (from watching them for ${userPatterns.daysAnalyzed} days):\n${userPatterns.aiSummary}` : ''}
 
-RESPOND WITH EXACTLY THIS JSON FORMAT (no other text):
+RESPOND WITH THIS JSON (and nothing else):
 {
-  "action": "specific task in 3-8 words",
-  "reasoning": "1 sentence explaining why, referencing personal baseline if available",
+  "action": "one specific thing to do right now (3-8 words, like advice from a friend)",
+  "reasoning": "2-3 sentences. Start with empathy ('I can see...', 'I noticed...', 'Based on what I know about you...'). Reference their patterns if relevant. Explain WHY this will help them specifically.",
   "urgency": "${context.decision.capacity < 30 ? 'critical' : context.decision.capacity < 50 ? 'high' : context.decision.capacity < 70 ? 'medium' : 'low'}",
-  "timeframe": "when to do this",
+  "timeframe": "when to do this (be specific like 'right now', 'before your next meeting', 'tonight before bed')",
   "category": "hydration|nutrition|sleep|exercise|mental|general"
 }
 
-RULES:
-1. Action MUST be specific and actionable (not vague like "take care of yourself")
-2. Reference the user's PERSONAL baseline when available (e.g., "Your capacity is 15% below YOUR usual average")
-3. If capacity < 40%, action should focus on RECOVERY
-4. Match category to the most pressing issue
-5. Timeframe should be realistic
-6. If user is performing BETTER than their baseline, acknowledge it positively`;
+IMPORTANT TONE GUIDELINES:
+1. Sound like a caring friend, NOT a robot or doctor
+2. Use "you" and "your" - make it personal
+3. If they're struggling, acknowledge it warmly ("I can see you're having a tough stretch...")
+4. If doing well, celebrate genuinely ("You're on fire lately!")
+5. Reference their specific patterns ("I've noticed your Mondays are tough...")
+6. Keep reasoning conversational - no bullet points, no formal language
+7. If capacity < 40%, be extra gentle and focus on ONE simple recovery action`;
+
 
     try {
         const result = await geminiModel.generateContent(prompt);
@@ -288,43 +301,43 @@ RULES:
 }
 
 // ============================================
-// RULES-BASED FALLBACK RESPONSE
+// RULES-BASED FALLBACK RESPONSE (Human-Friendly)
 // ============================================
 function generateRulesBasedResponse(context) {
     const { decision, health } = context;
     const capacity = decision?.capacity || 50;
 
-    // Determine primary issue
+    // Determine primary issue with warm, human language
     let action, reasoning, category, timeframe;
 
     if (health.sleep === 'LOW') {
-        action = "Prioritize 8 hours of sleep tonight";
-        reasoning = "Sleep deficit is limiting your cognitive capacity. Recovery requires rest.";
+        action = "Get to bed early tonight";
+        reasoning = "I can see you didn't get enough rest. Your body needs time to recover, and sleep is the best medicine right now. Tomorrow will feel completely different.";
         category = "sleep";
-        timeframe = "tonight";
+        timeframe = "tonight before 10pm";
     } else if (health.water === 'LOW') {
-        action = "Drink 500ml of water now";
-        reasoning = "Dehydration detected. Immediate hydration will improve focus and energy.";
+        action = "Grab a big glass of water";
+        reasoning = "I noticed you haven't had enough water today. Even mild dehydration can make everything feel harder. A few good gulps will help you feel more alert.";
         category = "hydration";
-        timeframe = "now";
+        timeframe = "right now";
     } else if (health.mentalLoad === 'HIGH') {
-        action = "Take a 10-minute break";
-        reasoning = "High mental load detected. A short break will help restore focus.";
+        action = "Step away for 10 minutes";
+        reasoning = "You're carrying a lot right now, and that's exhausting. A short break isn't slacking—it's how you'll actually get through the rest of today without burning out.";
         category = "mental";
-        timeframe = "within 30 minutes";
+        timeframe = "as soon as you can";
     } else if (health.food === 'LOW') {
-        action = "Eat a balanced meal";
-        reasoning = "Nutrition is essential for sustained energy. Prioritize protein and complex carbs.";
+        action = "Have a proper meal";
+        reasoning = "Running on empty never ends well. Your brain needs fuel to function. Something with protein will keep you going longer than a quick snack.";
         category = "nutrition";
-        timeframe = "within 1 hour";
+        timeframe = "within the next hour";
     } else if (health.exercise === 'PENDING') {
-        action = "Get 20 minutes of movement";
-        reasoning = "Physical activity boosts mood and energy. Even a short walk helps.";
+        action = "Move your body for 20 minutes";
+        reasoning = "Even a short walk can shift your entire mood. You don't need a full workout—just some movement to get out of your head and into your body.";
         category = "exercise";
-        timeframe = "today";
+        timeframe = "sometime today";
     } else {
-        action = "Maintain your current routine";
-        reasoning = "All metrics are stable. Continue your healthy habits.";
+        action = "Keep doing what you're doing";
+        reasoning = "You're in a good place right now! All your basics are covered. This is what balance looks like—enjoy it.";
         category = "general";
         timeframe = "ongoing";
     }
@@ -470,4 +483,76 @@ async function parseVoiceHealthLog(text) {
     }
 }
 
-module.exports = { processHealthData, parseVoiceHealthLog };
+// ============================================
+// DYNAMIC MENTAL LOAD ASSESSMENT
+// ============================================
+
+/**
+ * Generate a contextual question for mental load assessment
+ */
+async function generateMentalLoadQuestion(userId) {
+    if (!geminiModel) return { question: "How would you describe your mental energy right now?", type: "general" };
+
+    try {
+        const history = await getMemoryCallback(userId, {});
+        const prompt = `You are a mindful AI health coach. Generate ONE brief, intelligent question to assess the user's current mental load and stress level.
+        
+        CONTEXT:
+        ${history ? `Recent pattern: ${history.message}` : 'No recent history.'}
+        
+        GUIDELINES:
+        1. Keep it under 15 words.
+        2. Vary the focus: sometimes ask about rest, sometimes focus/clarity, sometimes physical tension.
+        3. Make it feel human and caring, not clinical.
+        
+        Return ONLY the question text.`;
+
+        const result = await geminiModel.generateContent(prompt);
+        const response = await result.response;
+        return {
+            question: response.text().trim() || "How is your mental state feeling at this moment?",
+            type: "dynamic"
+        };
+    } catch (error) {
+        console.error('Question generation error:', error);
+        return { question: "How is your stress level today?", type: "fallback" };
+    }
+}
+
+/**
+ * Analyze user's response to determine mental load status
+ */
+async function analyzeMentalLoadAnswer(answer) {
+    if (!geminiModel) {
+        const lower = answer.toLowerCase();
+        if (lower.includes('stress') || lower.includes('busy') || lower.includes('tired') || lower.includes('hard')) return 'HIGH';
+        return 'OK';
+    }
+
+    try {
+        const prompt = `Analyze the user's response to a stress assessment question and categorize it into exactly one of three statuses:
+        - OK: Feeling good, balanced, or manageable stress.
+        - HIGH: Feeling overwhelmed, anxious, extremely busy, or burnout.
+        - LOW: Feeling sad, low energy, depressed, or lack of motivation.
+
+        USER ANSWER: "${answer}"
+
+        Return ONLY the status (OK, HIGH, or LOW).`;
+
+        const result = await geminiModel.generateContent(prompt);
+        const response = await result.response;
+        const status = response.text().trim().toUpperCase();
+
+        if (['OK', 'HIGH', 'LOW'].includes(status)) return status;
+        return 'OK';
+    } catch (error) {
+        return 'OK';
+    }
+}
+
+module.exports = {
+    processHealthData,
+    parseVoiceHealthLog,
+    generateMentalLoadQuestion,
+    analyzeMentalLoadAnswer
+};

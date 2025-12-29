@@ -593,4 +593,39 @@ export const api = {
             method: 'POST',
         });
     },
+
+    // Smart Hydration
+    async logWater(amount?: number): Promise<{
+        currentIntake: number;
+        goal: number;
+        settings: any;
+    }> {
+        return authFetch(`${API_BASE_URL}/user/water`, {
+            method: 'POST',
+            body: JSON.stringify({ amount }),
+        });
+    },
+
+    async updateHydrationSettings(settings: {
+        remindersEnabled?: boolean;
+        reminderInterval?: number;
+        incrementAmount?: number;
+    }) {
+        return authFetch(`${API_BASE_URL}/user/hydration-settings`, {
+            method: 'PUT',
+            body: JSON.stringify(settings),
+        });
+    },
+
+    // Mental Load Assessment
+    async getMentalLoadQuestion(): Promise<{ question: string; type: string }> {
+        return authFetch(`${API_BASE_URL}/ai/mental-load-question`, {});
+    },
+
+    async analyzeMentalLoadAnswer(answer: string): Promise<{ status: 'OK' | 'HIGH' | 'LOW' }> {
+        return authFetch(`${API_BASE_URL}/ai/mental-load-analysis`, {
+            method: 'POST',
+            body: JSON.stringify({ answer }),
+        });
+    },
 };

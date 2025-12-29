@@ -23,7 +23,9 @@ import {
   AlertTriangle,
   Flame,
   Zap,
-  Leaf
+  Leaf,
+  Bell,
+  BellOff
 } from "lucide-react";
 
 // All Feature Components
@@ -36,6 +38,8 @@ import GoalSettings from "@/components/GoalSettings";
 import DataExport from "@/components/DataExport";
 import RecoveryMode from "@/components/RecoveryMode";
 import { VoiceLogger } from "@/components/VoiceLogger";
+import HydrationModal from "@/components/HydrationModal";
+import MentalLoadModal from "@/components/MentalLoadModal";
 
 // Integrated Feature Components
 import { BiologicalStatus } from "@/components/BiologicalStatus";
@@ -84,6 +88,15 @@ const Index = () => {
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
   const [nextCheckInTime, setNextCheckInTime] = useState<string>("");
 
+  // Hydration State
+  const [waterIntake, setWaterIntake] = useState(0);
+  const [waterGoal, setWaterGoal] = useState(2000);
+  const [hydrationSettings, setHydrationSettings] = useState({
+    remindersEnabled: false,
+    reminderInterval: 60,
+    incrementAmount: 250
+  });
+
   // Modal States for ALL features
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showFocusTimer, setShowFocusTimer] = useState(false);
@@ -107,9 +120,12 @@ const Index = () => {
     mental: { category: "mental", value: "", status: "NOT_SET", logged: false },
   });
 
+  const [showHydrationModal, setShowHydrationModal] = useState(false);
+  const [showMentalLoadModal, setShowMentalLoadModal] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { notifyRecoveryMode, notifyCriticalCapacity, permission } = useNotifications();
+  const { notifyRecoveryMode, notifyCriticalCapacity, permission, requestPermission } = useNotifications();
 
   // Fetch User Data
   useEffect(() => {
@@ -122,23 +138,54 @@ const Index = () => {
         setUserName(stats.name || "Traveler");
         if (stats.mode) setOperatingMode(stats.mode);
 
+        // Hydration initialization
+        let currentIntake = 0;
+        let goalIntake = 2000;
+        if (stats.hydration) {
+          currentIntake = stats.hydration.currentIntake || 0;
+          setWaterIntake(currentIntake);
+          setHydrationSettings(stats.hydration);
+        }
+        if (stats.goals?.targetWaterLiters) {
+          goalIntake = stats.goals.targetWaterLiters * 1000;
+          setWaterGoal(goalIntake);
+        }
+
         // Restore check-ins from latest log
         if (stats.latestLog?.health) {
           const h = stats.latestLog.health;
+          const isTodayLog = stats.todayCheckedIn;
+
           const restored: Record<CategoryKey, HealthData> = {
-            water: { category: 'water', value: 'Logged', status: h.water ? 'OK' : 'NOT_SET', logged: !!h.water },
-            food: { category: 'food', value: 'Logged', status: h.food ? 'OK' : 'NOT_SET', logged: !!h.food },
-            exercise: { category: 'exercise', value: 'Logged', status: h.exercise ? 'OK' : 'NOT_SET', logged: !!h.exercise },
-            sleep: { category: 'sleep', value: 'Logged', status: h.sleep ? 'OK' : 'NOT_SET', logged: !!h.sleep },
-            mental: { category: 'mental', value: 'Logged', status: h.mentalLoad ? 'OK' : 'NOT_SET', logged: !!h.mentalLoad },
+            water: {
+              category: 'water',
+              value: currentIntake > 0 ? `${currentIntake}ml` : '',
+              status: currentIntake >= goalIntake ? 'OK' : (currentIntake > 0 ? 'LOW' : 'NOT_SET'),
+              logged: currentIntake > 0
+            },
+            food: { category: 'food', value: 'Logged', status: h.food && isTodayLog ? h.food : 'NOT_SET', logged: !!h.food && isTodayLog },
+            exercise: { category: 'exercise', value: 'Logged', status: h.exercise && isTodayLog ? h.exercise : 'NOT_SET', logged: !!h.exercise && isTodayLog },
+            sleep: { category: 'sleep', value: 'Logged', status: h.sleep && isTodayLog ? h.sleep : 'NOT_SET', logged: !!h.sleep && isTodayLog },
+            mental: { category: 'mental', value: 'Logged', status: h.mentalLoad && isTodayLog ? h.mentalLoad : 'NOT_SET', logged: !!h.mentalLoad && isTodayLog },
           };
           setHealthData(restored);
 
           // If already checked in today, restore AI response and lock check-in
-          if (stats.todayCheckedIn && stats.latestLog?.aiResponse) {
+          if (isTodayLog && stats.latestLog?.aiResponse) {
             setAiResponse(stats.latestLog.aiResponse);
             setTodayCheckedIn(true);
           }
+        } else {
+          // Initial state with water if no log yet
+          setHealthData(prev => ({
+            ...prev,
+            water: {
+              category: 'water',
+              value: currentIntake > 0 ? `${currentIntake}ml` : '',
+              status: currentIntake >= goalIntake ? 'OK' : (currentIntake > 0 ? 'LOW' : 'NOT_SET'),
+              logged: currentIntake > 0
+            }
+          }));
         }
 
         // Check for recovery mode from API
@@ -189,11 +236,54 @@ const Index = () => {
     }
   }, [bioMetrics, operatingMode, lockAcknowledged]);
 
+  // SMART HYDRATION: Reminder Effect
+  useEffect(() => {
+    if (!hydrationSettings.remindersEnabled || waterIntake >= waterGoal || todayCheckedIn) return;
+
+    const intervalId = setInterval(() => {
+      // Trigger notification
+      if (Notification.permission === "granted") {
+        new Notification("Hydration Reminder 💧", {
+          body: `Time to drink ${hydrationSettings.incrementAmount}ml of water to hit your ${waterGoal}ml goal!`,
+          icon: "/pwa-192x192.png"
+        });
+        toast({ title: "💧 Hydration Time", description: `Time to drink ${hydrationSettings.incrementAmount}ml!` });
+      }
+    }, hydrationSettings.reminderInterval * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [hydrationSettings, waterIntake, waterGoal, todayCheckedIn]);
+
   // Logging Handler
-  const handleLog = (category: CategoryKey, status: StatusValue) => {
+  const handleLog = async (category: CategoryKey, status: StatusValue | number) => {
+    if (todayCheckedIn) return;
+
+    // Special handling for water
+    if (category === 'water') {
+      try {
+        const numericAmount = Number(status);
+        const amount = isNaN(numericAmount) ? undefined : numericAmount;
+        const result = await api.logWater(amount);
+        setWaterIntake(result.currentIntake);
+        setHealthData(prev => ({
+          ...prev,
+          water: {
+            ...prev.water,
+            status: result.currentIntake >= waterGoal ? 'OK' : 'LOW',
+            logged: true,
+            value: `${result.currentIntake}ml`
+          }
+        }));
+        toast({ title: "💧 Water Logged", description: `Recorded ${result.currentIntake}ml total` });
+      } catch (e) {
+        toast({ title: "Error", description: "Could not log water", variant: "destructive" });
+      }
+      return;
+    }
+
     setHealthData(prev => ({
       ...prev,
-      [category]: { ...prev[category], status, logged: true, value: "Logged" }
+      [category]: { ...prev[category], status: status as StatusValue, logged: true, value: "Logged" }
     }));
     toast({ title: "✓ Logged", description: `${TASK_CATEGORIES[category].label} recorded.` });
   };
@@ -214,19 +304,30 @@ const Index = () => {
     ));
   };
 
-  // AI Check-in (once per day)
+  // Perform Check-in
   const performCheckIn = async () => {
     if (todayCheckedIn) {
       toast({ title: "Already Checked In", description: `Next check-in available in ${nextCheckInTime}` });
       return;
     }
 
-    // Validation: Ensure at least one metric is logged
-    const hasData = Object.values(healthData).some(d => d.status !== 'NOT_SET');
-    if (!hasData) {
+    // Strict Validation: Ensure all categories are logged
+    const incomplete = Object.entries(healthData).filter(([key, data]) => !data.logged);
+    if (incomplete.length > 0) {
+      const missing = incomplete.map(([key]) => TASK_CATEGORIES[key].label).join(", ");
       toast({
-        title: "No Data Logged",
-        description: "Please record at least one health metric (e.g., Sleep, Water) before checking in.",
+        title: "⚠️ Check-in Initializing...",
+        description: `Please complete all logs first. Missing: ${missing}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // REQUIREMENT: Must hit water goal
+    if (waterIntake < waterGoal) {
+      toast({
+        title: "Hydration Goal Not Met",
+        description: `You need ${waterGoal - waterIntake}ml more water before you can complete your daily record.`,
         variant: "destructive"
       });
       return;
@@ -234,7 +335,13 @@ const Index = () => {
 
     setIsLoading(true);
     try {
-      const payload = {
+      const payload: {
+        water?: StatusValue;
+        food?: StatusValue;
+        sleep?: StatusValue;
+        exercise?: StatusValue;
+        mentalLoad?: StatusValue;
+      } = {
         water: healthData.water.status !== 'NOT_SET' ? healthData.water.status : undefined,
         food: healthData.food.status !== 'NOT_SET' ? healthData.food.status : undefined,
         sleep: healthData.sleep.status !== 'NOT_SET' ? healthData.sleep.status : undefined,
@@ -314,6 +421,27 @@ const Index = () => {
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
       {showGoals && <GoalSettings onClose={() => setShowGoals(false)} />}
       {showDataExport && <DataExport onClose={() => setShowDataExport(false)} />}
+
+      <HydrationModal
+        isOpen={showHydrationModal}
+        onClose={() => setShowHydrationModal(false)}
+        currentIntake={waterIntake}
+        goal={waterGoal}
+        incrementAmount={hydrationSettings.incrementAmount}
+        onLog={(amount) => handleLog('water', amount.toString() as any)}
+      />
+
+      <MentalLoadModal
+        isOpen={showMentalLoadModal}
+        onClose={() => setShowMentalLoadModal(false)}
+        onComplete={(status) => {
+          setHealthData(prev => ({
+            ...prev,
+            mental: { ...prev.mental, status, logged: true, value: status }
+          }));
+          toast({ title: "AI Analysis Complete", description: `Mental load assessed as ${status}.` });
+        }}
+      />
 
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
@@ -481,8 +609,18 @@ const Index = () => {
               return current === 'NOT_SET' ? 'OK' : current === 'OK' ? 'LOW' : 'NOT_SET';
             };
 
-            const handleCardClick = () => {
+            const handleCardClick = async () => {
               if (todayCheckedIn) return; // Lock after check-in
+
+              if (k === 'water') {
+                setShowHydrationModal(true);
+                return;
+              }
+
+              if (k === 'mental') {
+                setShowMentalLoadModal(true);
+                return;
+              }
 
               const next = getNextStatus(data.status, k);
               if (next === 'NOT_SET') {
@@ -498,6 +636,12 @@ const Index = () => {
 
             // Dynamic styling based on status
             const getStatusColor = () => {
+              if (k === 'water') {
+                const progress = (waterIntake / waterGoal) * 100;
+                if (progress >= 100) return 'bg-cyan-500/10 border-cyan-500';
+                if (progress > 0) return 'bg-cyan-500/5 border-cyan-500/30';
+                return 'hover:border-cyan-500/30';
+              }
               if (!data.logged) return 'hover:border-primary/30';
               if (data.status === 'HIGH' || data.status === 'LOW' || data.status === 'PENDING') return 'bg-destructive/10 border-destructive/50';
               return 'bg-primary/5 border-primary/20';
@@ -505,18 +649,65 @@ const Index = () => {
 
             return (
               <div key={key}
-                className={`bento-card p-4 group cursor-pointer transition-all duration-300 ${getStatusColor()}`}
+                className={`bento-card p-4 group cursor-pointer transition-all duration-300 overflow-hidden relative ${getStatusColor()}`}
                 onClick={handleCardClick}>
+                {/* Progress Bar for Water */}
+                {k === 'water' && (
+                  <div
+                    className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-1000"
+                    style={{ width: `${Math.min((waterIntake / waterGoal) * 100, 100)}%` }}
+                  />
+                )}
+
                 <div className="flex justify-between items-start">
-                  <Icon className="w-8 h-8 text-foreground group-hover:scale-110 transition-transform duration-300" />
-                  {data.logged && <span className={`text-xs font-bold ${data.status === 'HIGH' || data.status === 'LOW' ? 'text-destructive' : 'text-primary'}`}>
-                    {data.status}
-                  </span>}
+                  <div className="flex items-center gap-2">
+                    <Icon className={`w-8 h-8 transition-transform duration-300 ${k === 'water' ? 'text-cyan-500' : 'text-foreground group-hover:scale-110'}`} />
+                    {k === 'water' && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (permission !== 'granted') {
+                            const granted = await requestPermission();
+                            if (!granted) {
+                              toast({ title: "Permission Required", description: "Please enable notifications in your browser settings.", variant: "destructive" });
+                              return;
+                            }
+                          }
+
+                          const newEnabled = !hydrationSettings.remindersEnabled;
+                          try {
+                            await api.updateHydrationSettings({ remindersEnabled: newEnabled });
+                            setHydrationSettings(prev => ({ ...prev, remindersEnabled: newEnabled }));
+                            toast({ title: newEnabled ? "🔔 Reminders On" : "🔕 Reminders Off", description: newEnabled ? "I'll nudge you to stay hydrated." : "Acoustic hydration only." });
+                          } catch (e) {
+                            toast({ title: "Error", description: "Could not update settings", variant: "destructive" });
+                          }
+                        }}
+                        className={`p-1.5 rounded-lg transition-all ${hydrationSettings.remindersEnabled ? 'bg-cyan-500/20 text-cyan-500' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
+                        title={hydrationSettings.remindersEnabled ? "Reminders Active" : "Enable Reminders"}
+                      >
+                        {hydrationSettings.remindersEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4 opacity-40" />}
+                      </button>
+                    )}
+                  </div>
+                  {k === 'water' ? (
+                    <span className="text-xs font-bold text-cyan-500">
+                      {Math.round((waterIntake / waterGoal) * 100)}%
+                    </span>
+                  ) : (
+                    data.logged && <span className={`text-xs font-bold ${data.status === 'HIGH' || data.status === 'LOW' ? 'text-destructive' : 'text-primary'}`}>
+                      {data.status}
+                    </span>
+                  )}
                 </div>
                 <div className="mt-4">
                   <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{info.label}</h3>
-                  <p className={`text-lg font-display font-semibold transition-colors ${data.logged ? 'text-foreground' : 'group-hover:text-primary'}`}>
-                    {data.logged ? (data.status === 'HIGH' ? 'High Stress' : data.status === 'LOW' ? 'Deficit' : data.status === 'PENDING' ? 'Skipped' : 'Good') : "Log Now"}
+                  <p className={`text-lg font-display font-semibold transition-colors ${data.logged || (k === 'water' && waterIntake > 0) ? 'text-foreground' : 'group-hover:text-primary'}`}>
+                    {k === 'water' ? (
+                      waterIntake >= waterGoal ? 'Goal Met' : `${waterIntake} / ${waterGoal}ml`
+                    ) : (
+                      data.logged ? (data.status === 'HIGH' ? 'High Stress' : data.status === 'LOW' ? 'Deficit' : data.status === 'PENDING' ? 'Skipped' : 'Good') : "Log Now"
+                    )}
                   </p>
                 </div>
               </div>
