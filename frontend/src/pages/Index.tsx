@@ -60,6 +60,7 @@ const Index = () => {
   const [bioMetrics, setBioMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showRecoveryLock, setShowRecoveryLock] = useState(false);
+  const [lockAcknowledged, setLockAcknowledged] = useState(false);
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
   const [nextCheckInTime, setNextCheckInTime] = useState<string>("");
 
@@ -162,11 +163,11 @@ const Index = () => {
   // Recovery Lock Logic
   useEffect(() => {
     if (operatingMode !== 'CARETAKER') return;
-    if (bioMetrics?.capacity !== undefined && bioMetrics.capacity < 45) {
+    if (bioMetrics?.capacity !== undefined && bioMetrics.capacity < 45 && !lockAcknowledged) {
       setShowRecoveryLock(true);
       notifyCriticalCapacity?.(bioMetrics.capacity);
     }
-  }, [bioMetrics, operatingMode]);
+  }, [bioMetrics, operatingMode, lockAcknowledged]);
 
   // Logging Handler
   const handleLog = (category: CategoryKey, status: StatusValue) => {
@@ -265,7 +266,10 @@ const Index = () => {
         isVisible={showRecoveryLock}
         capacity={bioMetrics?.capacity || 40}
         metrics={bioMetrics}
-        onAcknowledge={() => setShowRecoveryLock(false)}
+        onAcknowledge={() => {
+          setShowRecoveryLock(false);
+          setLockAcknowledged(true);
+        }}
       />
 
       {/* Action Required Modal (Full Screen) */}

@@ -100,14 +100,14 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8 sticky top-0 py-4 z-20 bg-background/50 backdrop-blur-md">
                     <div>
-                        <h2 className="text-3xl font-display font-medium text-white tracking-tight">
+                        <h2 className="text-3xl font-display font-medium text-foreground tracking-tight">
                             Wellness Analytics
                         </h2>
                         <p className="text-sm text-muted-foreground">Your biological trends</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all"
+                        className="w-10 h-10 rounded-full bg-muted/10 hover:bg-muted/20 flex items-center justify-center transition-all"
                     >
                         ✕
                     </button>
@@ -127,7 +127,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                             }}
                             className={`px-6 py-2.5 font-display font-medium text-sm rounded-xl transition-all ${activeTab === tab
                                 ? 'bg-primary text-primary-foreground shadow-lg'
-                                : 'text-muted-foreground hover:text-white'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             {tab === 'trends' ? 'Trends' : tab === 'weekly' ? 'Weekly' : 'AI Insights'}
@@ -228,7 +228,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                         <span className="text-muted-foreground">Days Logged</span>
                                         <span className="text-xl font-bold">{data.weekly.stats.daysLogged}/7</span>
                                     </div>
-                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl">
+                                    <div className="flex justify-between items-center p-3 bg-muted/10 rounded-xl">
                                         <span className="text-muted-foreground">Hydration Issues</span>
                                         <span className="text-xl font-bold text-rose-400">{data.weekly.stats.hydrationIssues}</span>
                                     </div>
@@ -273,7 +273,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                         </div>
                                         <div className="bento-card p-6 flex flex-col items-center justify-center text-center">
                                             <span className="text-4xl mb-2">😴</span>
-                                            <span className="text-2xl font-bold text-white">{weeklyInsights.overview?.sleepQualityRate || 0}%</span>
+                                            <span className="text-2xl font-bold text-foreground">{weeklyInsights.overview?.sleepQualityRate || 0}%</span>
                                             <span className="text-xs uppercase tracking-widest text-muted-foreground">Sleep Quality</span>
                                         </div>
                                         <div className="bento-card p-6 flex flex-col items-center justify-center text-center">
@@ -293,9 +293,8 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                         </div>
                                         {weeklyInsights.recommendations && weeklyInsights.recommendations.length > 0 ? (
                                             <div className="grid md:grid-cols-2 gap-4">
-                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                 {weeklyInsights.recommendations.map((rec: any, idx: number) => (
-                                                    <div key={idx} className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                                                    <div key={idx} className="p-4 rounded-2xl bg-muted/10 hover:bg-muted/20 transition-colors">
                                                         <p className="font-bold text-primary mb-1">{rec.action}</p>
                                                         <p className="text-sm text-muted-foreground">{rec.reason}</p>
                                                     </div>
@@ -314,9 +313,8 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                             <div className="mt-6 pt-6 border-t border-white/10">
                                                 <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Patterns Found</h4>
                                                 <div className="space-y-2">
-                                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                     {weeklyInsights.correlations.map((c: any, idx: number) => (
-                                                        <div key={idx} className="p-3 rounded-xl bg-white/5 text-sm">
+                                                        <div key={idx} className="p-3 rounded-xl bg-muted/10 text-sm">
                                                             {c.message}
                                                         </div>
                                                     ))}
@@ -341,7 +339,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                                     <div className="mt-3 space-y-2">
                                                         <p className="text-xs text-muted-foreground">Historical patterns:</p>
                                                         {weeklyInsights.memoryInsights.historicalContext.map((ctx: string, idx: number) => (
-                                                            <div key={idx} className="p-3 rounded-xl bg-white/5 text-xs text-muted-foreground">
+                                                            <div key={idx} className="p-3 rounded-xl bg-muted/10 text-xs text-muted-foreground">
                                                                 {typeof ctx === 'string' ? ctx : JSON.stringify(ctx)}
                                                             </div>
                                                         ))}
@@ -376,9 +374,9 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
     );
 }
 
-function StatCard({ label, value, icon, color = 'text-white' }: { label: string; value: string | number; icon: string; color?: string }) {
+function StatCard({ label, value, icon, color = 'text-foreground' }: { label: string; value: string | number; icon: string; color?: string }) {
     return (
-        <div className="glass p-4 rounded-2xl flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors">
+        <div className="glass p-4 rounded-2xl flex flex-col items-center justify-center text-center hover:bg-muted/10 transition-colors">
             <span className="text-2xl mb-2">{icon}</span>
             <span className={`text-xl font-bold font-display ${color}`}>{value}</span>
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">{label}</span>
