@@ -509,9 +509,45 @@ app.post('/api/feedback', authMiddleware, async (req, res) => {
 // Complete Action Endpoint
 app.post('/api/action/complete', authMiddleware, async (req, res) => {
     try {
-        const { userId } = req.user;
-        console.log(`User ${userId} completed action.`);
-        res.json({ success: true, message: 'Action marked as complete' });
+        const userId = req.user.id;
+
+        // 1. Get today's log to find what's wrong
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayLog = await HealthLog.findOne({
+            userId,
+            date: { $gte: today }
+        });
+
+        if (!todayLog) {
+            return res.json({ success: true, message: 'No active log to update' });
+        }
+
+        // 2. Determine what action was needed
+        const actionKey = getHighestPriorityAction(todayLog.health);
+
+        if (actionKey) {
+            // 3. Fix it (Set to 'OK')
+            todayLog.health[actionKey] = 'OK';
+
+            // If it was High Stress, lower it
+            if (actionKey === 'mentalLoad' || todayLog.health.mentalLoad === 'HIGH') {
+                todayLog.health.mentalLoad = 'OK';
+            }
+
+            await todayLog.save();
+            console.log(`User ${userId} completed action: ${actionKey} -> OK`);
+
+            // Recalculate to return new state immediately
+            const historyLogs = await HealthLog.find({ userId }).sort({ date: -1 }).limit(7);
+            const user = await User.findById(userId);
+            const decision = generateDecision(todayLog.health, historyLogs, user.settings.mode);
+
+            return res.json({ success: true, message: 'Health log updated', metrics: decision.decision });
+        }
+
+        res.json({ success: true, message: 'Action acknowledged (no specific deficit found)' });
     } catch (error) {
         console.error('Complete action error:', error);
         res.status(500).json({ error: 'Failed to complete action' });

@@ -219,20 +219,33 @@ function generateDecision(health, history = [], userMode = 'CARETAKER') {
     metrics.confidence = Math.max(0.1, parseFloat(confidence.toFixed(2)));
 
     // 4. Determine Action
-    let requiredAction = getHighestPriorityAction(health);
+    const actionKey = getHighestPriorityAction(health);
+    let requiredAction = null;
+
+    if (actionKey) {
+        const actionMap = {
+            'water': "Hydrate Immediately",
+            'food': "Eat a Nutritious Meal",
+            'sleep': "Rest Your Eyes (20m)",
+            'exercise': "Movement Break"
+        };
+        requiredAction = actionMap[actionKey];
+    }
 
     if (userMode === 'OBSERVER') {
         requiredAction = "Continue Observation";
     } else if (metrics.systemMode === 'SURVIVAL') {
         requiredAction = "IMMEDIATE REST PROTOCOL";
     } else if (metrics.systemMode === 'LOCKED_RECOVERY') {
-        requiredAction = "Recovery Action Required";
+        // If locked, stick to the specific deficit action, or default if none found
+        requiredAction = requiredAction || "Immediate Rest Required";
     }
 
     return {
         decision: {
             ...metrics,
-            requiredAction
+            requiredAction,
+            actionKey // Return key for potential API usage
         }
     };
 }
