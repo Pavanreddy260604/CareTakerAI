@@ -306,7 +306,7 @@ export const api = {
         };
         parsed: boolean;
     }> {
-        return authFetch(`${API_BASE_URL}/parse-voice`, {
+        return authFetch(`${API_BASE_URL}/ai/parse-voice`, {
             method: 'POST',
             body: JSON.stringify({ text }),
         });

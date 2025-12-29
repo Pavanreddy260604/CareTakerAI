@@ -405,4 +405,4 @@ function fallbackResponse(context) {
     };
 }
 
-module.exports = { processHealthData };
+module.exports = { processHealthData, parseVoiceHealthLog };

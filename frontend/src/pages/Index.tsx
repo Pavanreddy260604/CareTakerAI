@@ -495,10 +495,30 @@ const Index = () => {
             );
           })}
 
+
           {/* 4. TACTICAL HISTORY (Wide) */}
           <div className="col-span-2 md:col-span-4 bento-card p-0 overflow-hidden">
             <TacticalHistory />
           </div>
+
+          {/* 5. FOCUS ZONE BUTTON */}
+          <div className="col-span-2 md:col-span-4 flex justify-center mt-4">
+            <button
+              onClick={() => setShowFocusTimer(true)}
+              className="btn-primary flex items-center gap-2 px-6 py-3 shadow-glow hover:scale-105 transition-all"
+            >
+              <span>🧘</span>
+              Enter Focus Zone
+            </button>
+          </div>
+
+          {/* Focus Timer Overlay */}
+          {showFocusTimer && (
+            <FocusTimer
+              onClose={() => setShowFocusTimer(false)}
+              capacity={bioMetrics?.capacity || 100}
+            />
+          )}
 
 
 

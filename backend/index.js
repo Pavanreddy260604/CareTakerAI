@@ -794,6 +794,25 @@ app.get('/api/streak', authMiddleware, async (req, res) => {
     }
 });
 
+// API Endpoint: Parse Voice Command (PROTECTED)
+app.post('/api/ai/parse-voice', authMiddleware, async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) return res.status(400).json({ error: 'Text required' });
+
+        const parsedData = await aiService.parseVoiceHealthLog(text);
+
+        if (parsedData) {
+            res.json({ success: true, health: parsedData });
+        } else {
+            res.status(500).json({ success: false, error: 'AI failed to parse' });
+        }
+    } catch (error) {
+        console.error('Voice Route Error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // API Endpoint: Save Focus Session (PROTECTED)
 app.post('/api/focus', authMiddleware, async (req, res) => {
     try {

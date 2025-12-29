@@ -5,19 +5,21 @@ import { api } from '@/lib/api';
 interface FocusTimerProps {
     onSessionComplete?: (duration: number) => void;
     onClose: () => void;
+    capacity: number; // Add capacity prop
 }
 
 type TimerState = 'idle' | 'focus' | 'break' | 'paused';
 
 const FOCUS_DURATIONS = [
-    { label: '25m', value: 25 * 60, desc: 'Pomodoro' },
-    { label: '45m', value: 45 * 60, desc: 'Deep Work' },
-    { label: '90m', value: 90 * 60, desc: 'Flow State' },
+    { label: '15m', value: 15 * 60, desc: 'Micro-Session', minCapacity: 0 },
+    { label: '25m', value: 25 * 60, desc: 'Pomodoro', minCapacity: 30 },
+    { label: '45m', value: 45 * 60, desc: 'Deep Work', minCapacity: 60 },
+    { label: '90m', value: 90 * 60, desc: 'Flow State', minCapacity: 80 },
 ];
 
 const BREAK_DURATION = 5 * 60;
 
-export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
+export function FocusTimer({ onSessionComplete, onClose, capacity }: FocusTimerProps) {
     const [state, setState] = useState<TimerState>('idle');
     const [selectedDuration, setSelectedDuration] = useState(FOCUS_DURATIONS[0].value);
     const [timeRemaining, setTimeRemaining] = useState(selectedDuration);
@@ -203,8 +205,8 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
                         </div>
 
                         <div className={`mt-4 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md ${state === 'break' ? 'bg-amber-500/20 text-amber-400' :
-                                state === 'focus' ? 'bg-primary/20 text-primary' :
-                                    'bg-white/5 text-muted-foreground'
+                            state === 'focus' ? 'bg-primary/20 text-primary' :
+                                'bg-white/5 text-muted-foreground'
                             }`}>
                             {state === 'idle' ? 'Ready to Focus' : state === 'break' ? 'Recharging' : state === 'focus' ? 'Deep Work' : 'Paused'}
                         </div>
@@ -219,8 +221,8 @@ export function FocusTimer({ onSessionComplete, onClose }: FocusTimerProps) {
                                 key={d.value}
                                 onClick={() => { setSelectedDuration(d.value); setTimeRemaining(d.value); }}
                                 className={`p-4 rounded-2xl transition-all duration-300 flex flex-col items-center ${selectedDuration === d.value
-                                        ? 'bg-primary text-black scale-105 shadow-glow'
-                                        : 'bg-white/5 hover:bg-white/10 text-muted-foreground'
+                                    ? 'bg-primary text-black scale-105 shadow-glow'
+                                    : 'bg-white/5 hover:bg-white/10 text-muted-foreground'
                                     }`}
                             >
                                 <span className="text-xl font-bold font-display">{d.label}</span>
