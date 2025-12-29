@@ -377,64 +377,6 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                                 />
                             </div>
 
-                            {/* Smart Hydration Reminders - INTEGRATED */}
-                            <div className="bg-cyan-500/5 divide-y divide-cyan-500/10">
-                                <div className="px-4 py-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${remindersEnabled ? 'bg-cyan-500/20' : 'bg-muted/20'}`}>
-                                            <Bell className={`w-4 h-4 ${remindersEnabled ? 'text-cyan-500' : 'text-muted-foreground'}`} />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-foreground">Smart Reminders</p>
-                                            <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Nudges to stay hydrated</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setRemindersEnabled(!remindersEnabled)}
-                                        className={`w-10 h-5 rounded-full transition-colors relative ${remindersEnabled ? 'bg-cyan-500' : 'bg-muted'}`}
-                                    >
-                                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${remindersEnabled ? 'right-0.5' : 'left-0.5'}`} />
-                                    </button>
-                                </div>
-
-                                {remindersEnabled && (
-                                    <>
-                                        <div className="px-4 py-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs font-medium text-muted-foreground">Every</span>
-                                                <span className="text-xs font-bold text-cyan-500">{reminderInterval} minutes</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="30"
-                                                max="180"
-                                                step="15"
-                                                value={reminderInterval}
-                                                onChange={(e) => setReminderInterval(Number(e.target.value))}
-                                                className="w-full h-1 bg-muted rounded-full appearance-none cursor-pointer accent-cyan-500"
-                                            />
-                                        </div>
-                                        <div className="px-4 py-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs font-medium text-muted-foreground">Drink amount per log</span>
-                                                <span className="text-xs font-bold text-cyan-500">{incrementAmount} ml</span>
-                                            </div>
-                                            <div className="flex gap-1.5 mt-1">
-                                                {[100, 250, 500].map(amt => (
-                                                    <button
-                                                        key={amt}
-                                                        onClick={() => setIncrementAmount(amt)}
-                                                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${incrementAmount === amt ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-600' : 'border-border/30 text-muted-foreground hover:bg-muted/50'}`}
-                                                    >
-                                                        {amt}ml
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
                             {/* Exercise */}
                             <div className="px-4 py-4">
                                 <div className="flex items-center justify-between mb-3">
