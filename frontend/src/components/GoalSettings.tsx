@@ -3,6 +3,21 @@ import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import NotificationControl from './NotificationControl';
 import { useTheme } from "./ThemeProvider";
+import {
+    X,
+    Moon,
+    Sun,
+    Bed,
+    Droplets,
+    Brain,
+    Target, // Using Target instead of Flame for exercise or Dumbbell
+    RefreshCw,
+    LogOut,
+    Activity, // For Baseline
+    Sparkles,
+    TrendingUp,
+    Dumbbell
+} from "lucide-react";
 
 interface GoalSettingsProps {
     onClose: () => void;
@@ -131,12 +146,12 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
     return (
         <div className="fixed inset-0 bg-background z-50 overflow-auto safe-area-bottom">
             {/* App-Style Header */}
-            <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-white/10">
+            <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/10 shadow-sm">
                 <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-                    <button onClick={onClose} className="text-primary font-medium text-sm">
+                    <button onClick={onClose} className="text-primary font-medium text-sm hover:opacity-80 transition-opacity">
                         Close
                     </button>
-                    <h1 className="text-lg font-display font-semibold text-white">Settings</h1>
+                    <h1 className="text-lg font-display font-semibold text-foreground">Settings</h1>
                     <div className="w-10"></div> {/* Spacer for center alignment */}
                 </div>
             </div>
@@ -153,10 +168,10 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
                             Appearance
                         </h2>
-                        <div className="border border-white/10 bg-white/5 p-4 rounded-xl flex items-center justify-between">
+                        <div className="border border-border/50 bg-card p-4 rounded-xl flex items-center justify-between shadow-sm">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                                    {theme === 'dark' ? <span className="text-xl">🌙</span> : <span className="text-xl">☀️</span>}
+                                <div className="w-10 h-10 rounded-xl bg-muted/20 flex items-center justify-center shrink-0">
+                                    {theme === 'dark' ? <Moon className="w-5 h-5 text-primary" /> : <Sun className="w-5 h-5 text-amber-500" />}
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-foreground">
@@ -169,7 +184,7 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                             </div>
                             <button
                                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                                className="bg-white/10 hover:bg-white/20 text-foreground px-4 py-2 rounded-lg text-xs font-bold transition-all"
+                                className="bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-lg text-xs font-bold transition-all"
                             >
                                 TOGGLE
                             </button>
@@ -190,18 +205,18 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
                                 Current Status
                             </h2>
-                            <div className="bg-white/5 rounded-2xl overflow-hidden">
-                                <div className="grid grid-cols-2 divide-x divide-white/10">
+                            <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="grid grid-cols-2 divide-x divide-border/10">
                                     <div className="px-4 py-4 text-center">
                                         <p className={`text-2xl font-bold ${(currentMetrics.capacity || 0) < 30 ? 'text-destructive' :
-                                            (currentMetrics.capacity || 0) < 60 ? 'text-amber-400' : 'text-primary'
+                                            (currentMetrics.capacity || 0) < 60 ? 'text-amber-500' : 'text-primary'
                                             }`}>
                                             {currentMetrics.capacity || 0}%
                                         </p>
                                         <p className="text-xs text-muted-foreground">Cognitive Capacity</p>
                                     </div>
                                     <div className="px-4 py-4 text-center">
-                                        <p className={`text-2xl font-bold ${(currentMetrics.confidence || 0) < 0.6 ? 'text-amber-400' : 'text-primary'
+                                        <p className={`text-2xl font-bold ${(currentMetrics.confidence || 0) < 0.6 ? 'text-amber-500' : 'text-primary'
                                             }`}>
                                             {Math.round((currentMetrics.confidence || 0) * 100)}%
                                         </p>
@@ -209,17 +224,17 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                                     </div>
                                 </div>
                                 {/* Debts Row */}
-                                <div className="border-t border-white/10 grid grid-cols-3 divide-x divide-white/10">
+                                <div className="border-t border-border/10 grid grid-cols-3 divide-x divide-border/10">
                                     <div className="px-3 py-3 text-center">
-                                        <p className="text-sm font-bold text-white">{currentMetrics.sleepDebt || 0}</p>
+                                        <p className="text-sm font-bold text-foreground">{currentMetrics.sleepDebt || 0}</p>
                                         <p className="text-[10px] text-muted-foreground">Sleep Debt</p>
                                     </div>
                                     <div className="px-3 py-3 text-center">
-                                        <p className="text-sm font-bold text-white">{currentMetrics.hydrationDebt || 0}</p>
+                                        <p className="text-sm font-bold text-foreground">{currentMetrics.hydrationDebt || 0}</p>
                                         <p className="text-[10px] text-muted-foreground">Hydration</p>
                                     </div>
                                     <div className="px-3 py-3 text-center">
-                                        <p className="text-sm font-bold text-white">{currentMetrics.mentalDebt || 0}</p>
+                                        <p className="text-sm font-bold text-foreground">{currentMetrics.mentalDebt || 0}</p>
                                         <p className="text-[10px] text-muted-foreground">Mental</p>
                                     </div>
                                 </div>
@@ -231,23 +246,23 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                     {aiSuggestions?.suggestions && (
                         <div className="mb-8">
                             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2 flex items-center gap-2">
-                                <span>🤖</span> AI Goal Suggestions
+                                <Sparkles className="w-3 h-3 text-primary" /> AI Goal Suggestions
                             </h2>
-                            <div className="bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20 rounded-2xl p-4">
-                                <p className="text-sm text-white/80 mb-4">
+                            <div className="bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20 rounded-2xl p-4 shadow-sm">
+                                <p className="text-sm text-foreground/80 mb-4">
                                     {aiSuggestions.suggestions.explanation}
                                 </p>
                                 <div className="grid grid-cols-3 gap-3 mb-4">
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-cyan-400">{aiSuggestions.suggestions.targetSleepHours}h</p>
+                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions.targetSleepHours}h</p>
                                         <p className="text-[10px] text-muted-foreground">Sleep</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-cyan-400">{aiSuggestions.suggestions.targetWaterLiters}L</p>
+                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions.targetWaterLiters}L</p>
                                         <p className="text-[10px] text-muted-foreground">Water</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-cyan-400">{aiSuggestions.suggestions.targetExerciseDays}</p>
+                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions.targetExerciseDays}</p>
                                         <p className="text-[10px] text-muted-foreground">Exercise Days</p>
                                     </div>
                                 </div>
@@ -260,7 +275,7 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                                             toast({ title: '✨ AI Suggestions Applied', description: 'Save to confirm these goals.' });
                                         }
                                     }}
-                                    className="w-full py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-semibold text-sm rounded-xl transition-colors"
+                                    className="w-full py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-600 dark:text-cyan-400 font-semibold text-sm rounded-xl transition-colors"
                                 >
                                     Apply AI Suggestions
                                 </button>
@@ -273,13 +288,13 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
                             Health Goals
                         </h2>
-                        <div className="bg-white/5 rounded-2xl overflow-hidden divide-y divide-white/10">
+                        <div className="bg-card border border-border/50 rounded-2xl overflow-hidden divide-y divide-border/10 shadow-sm">
                             {/* Sleep */}
                             <div className="px-4 py-4">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl">😴</span>
-                                        <span className="text-sm font-medium text-white">Target Sleep</span>
+                                        <Bed className="w-5 h-5 text-primary" />
+                                        <span className="text-sm font-medium text-foreground">Target Sleep</span>
                                     </div>
                                     <span className="text-sm font-bold text-primary">{targetSleepHours} hours</span>
                                 </div>
@@ -289,7 +304,7 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                                     max="12"
                                     value={targetSleepHours}
                                     onChange={(e) => setTargetSleepHours(Number(e.target.value))}
-                                    className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-primary"
+                                    className="w-full h-1 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
                                 />
                             </div>
 
@@ -297,10 +312,10 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                             <div className="px-4 py-4">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl">💧</span>
-                                        <span className="text-sm font-medium text-white">Target Water</span>
+                                        <Droplets className="w-5 h-5 text-cyan-500" />
+                                        <span className="text-sm font-medium text-foreground">Target Water</span>
                                     </div>
-                                    <span className="text-sm font-bold text-cyan-400">{targetWaterLiters} liters</span>
+                                    <span className="text-sm font-bold text-cyan-500">{targetWaterLiters} liters</span>
                                 </div>
                                 <input
                                     type="range"
@@ -309,7 +324,7 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                                     step="0.5"
                                     value={targetWaterLiters}
                                     onChange={(e) => setTargetWaterLiters(Number(e.target.value))}
-                                    className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-cyan-400"
+                                    className="w-full h-1 bg-muted rounded-full appearance-none cursor-pointer accent-cyan-500"
                                 />
                             </div>
 
@@ -317,10 +332,10 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                             <div className="px-4 py-4">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl">💪</span>
-                                        <span className="text-sm font-medium text-white">Exercise Days / Week</span>
+                                        <Dumbbell className="w-5 h-5 text-amber-500" />
+                                        <span className="text-sm font-medium text-foreground">Exercise Days / Week</span>
                                     </div>
-                                    <span className="text-sm font-bold text-amber-400">{targetExerciseDays} days</span>
+                                    <span className="text-sm font-bold text-amber-500">{targetExerciseDays} days</span>
                                 </div>
                                 <input
                                     type="range"
@@ -328,7 +343,7 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                                     max="7"
                                     value={targetExerciseDays}
                                     onChange={(e) => setTargetExerciseDays(Number(e.target.value))}
-                                    className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-amber-400"
+                                    className="w-full h-1 bg-muted rounded-full appearance-none cursor-pointer accent-amber-500"
                                 />
                             </div>
                         </div>
@@ -339,34 +354,35 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
                             Personal Baseline
                         </h2>
-                        <div className="bg-white/5 rounded-2xl overflow-hidden">
+                        <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
                             {baseline?.hasBaseline ? (
                                 <>
-                                    <div className="grid grid-cols-2 divide-x divide-white/10">
+                                    <div className="grid grid-cols-2 divide-x divide-border/10">
                                         <div className="px-4 py-4 text-center">
                                             <p className="text-2xl font-bold text-primary">{baseline.avgCapacity}%</p>
                                             <p className="text-xs text-muted-foreground">Avg Capacity</p>
                                         </div>
                                         <div className="px-4 py-4 text-center">
-                                            <p className="text-2xl font-bold text-cyan-400">{Math.round((baseline.avgSleepQuality || 0) * 100)}%</p>
+                                            <p className="text-2xl font-bold text-cyan-500">{Math.round((baseline.avgSleepQuality || 0) * 100)}%</p>
                                             <p className="text-xs text-muted-foreground">Sleep Quality</p>
                                         </div>
                                     </div>
-                                    <div className="border-t border-white/10 px-4 py-3 flex items-center justify-between">
+                                    <div className="border-t border-border/10 px-4 py-3 flex items-center justify-between">
                                         <span className="text-xs text-muted-foreground">
                                             Based on {baseline.dataPoints} days
                                         </span>
                                         <button
                                             onClick={handleRecalculateBaseline}
-                                            className="text-xs text-primary font-medium"
+                                            className="text-xs text-primary font-medium flex items-center gap-1"
                                         >
+                                            <RefreshCw className="w-3 h-3" />
                                             Recalculate
                                         </button>
                                     </div>
                                 </>
                             ) : (
                                 <div className="px-4 py-8 text-center">
-                                    <span className="text-3xl block mb-2">📈</span>
+                                    <TrendingUp className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                                     <p className="text-sm text-muted-foreground">Not enough data yet</p>
                                     <p className="text-xs text-muted-foreground/60 mt-1">Need at least 7 days of check-ins</p>
                                 </div>
@@ -379,12 +395,12 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
                             Account
                         </h2>
-                        <div className="bg-white/5 rounded-2xl overflow-hidden">
+                        <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
                             <button
                                 onClick={handleLogout}
-                                className="w-full px-4 py-4 flex items-center gap-3 hover:bg-white/5 transition-colors"
+                                className="w-full px-4 py-4 flex items-center gap-3 hover:bg-muted/10 transition-colors"
                             >
-                                <span className="text-xl">🚪</span>
+                                <LogOut className="w-5 h-5 text-destructive" />
                                 <span className="text-sm font-medium text-destructive">Log Out</span>
                             </button>
                         </div>
@@ -395,13 +411,13 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
                             About
                         </h2>
-                        <div className="bg-white/5 rounded-2xl overflow-hidden divide-y divide-white/10">
+                        <div className="bg-card border border-border/50 rounded-2xl overflow-hidden divide-y divide-border/10 shadow-sm">
                             <div className="px-4 py-3 flex items-center justify-between">
-                                <span className="text-sm text-white">Version</span>
+                                <span className="text-sm text-foreground">Version</span>
                                 <span className="text-sm text-muted-foreground">1.0.0</span>
                             </div>
                             <div className="px-4 py-3 flex items-center justify-between">
-                                <span className="text-sm text-white">Build</span>
+                                <span className="text-sm text-foreground">Build</span>
                                 <span className="text-sm text-muted-foreground">Production</span>
                             </div>
                         </div>

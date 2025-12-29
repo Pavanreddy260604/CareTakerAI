@@ -126,6 +126,19 @@ async function processHealthData(context) {
         const currentHour = new Date().getHours();
         const timeOfDay = currentHour < 12 ? 'morning' : currentHour < 17 ? 'afternoon' : 'evening';
 
+        // Normalize health data to uppercase to prevent case sensitivity issues
+        if (context.health) {
+            Object.keys(context.health).forEach(key => {
+                if (typeof context.health[key] === 'string') {
+                    context.health[key] = context.health[key].toUpperCase();
+                }
+            });
+            // Map common variances
+            if (context.health.sleep === 'POOR') context.health.sleep = 'LOW';
+            if (context.health.food === 'NONE') context.health.food = 'LOW';
+            if (context.health.exercise === 'NONE') context.health.exercise = 'PENDING';
+        }
+
         // Get memory callback
         let memoryContext = null;
         if (context.userId && context.health) {

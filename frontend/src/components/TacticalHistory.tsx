@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { Droplets, Utensils, Moon, Activity, Brain, FolderOpen, AlertCircle, CheckCircle2, Circle } from "lucide-react";
 
 type StatusValue = "OK" | "LOW" | "DONE" | "PENDING" | "HIGH" | "NOT_SET";
 
@@ -45,13 +46,14 @@ const TacticalHistory = () => {
     }, []);
 
     const getSymbol = (status: StatusValue) => {
+        const props = { className: "w-3 h-3 sm:w-4 sm:h-4" };
         switch (status) {
-            case "OK": return "●";
-            case "DONE": return "●";
-            case "LOW": return "×";
-            case "HIGH": return "!";
-            case "PENDING": return "○";
-            default: return "-";
+            case "OK": return <CheckCircle2 {...props} />;
+            case "DONE": return <CheckCircle2 {...props} />;
+            case "LOW": return <AlertCircle {...props} />;
+            case "HIGH": return <AlertCircle {...props} />;
+            case "PENDING": return <Circle {...props} />;
+            default: return <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />;
         }
     };
 
@@ -62,7 +64,7 @@ const TacticalHistory = () => {
             case "LOW":
             case "HIGH": return "text-destructive";
             case "PENDING": return "text-yellow-500";
-            default: return "text-muted";
+            default: return "text-muted-foreground";
         }
     };
 
@@ -89,11 +91,11 @@ const TacticalHistory = () => {
     };
 
     const categories = [
-        { key: "water", label: "💧", fullLabel: "Water" },
-        { key: "food", label: "🍽️", fullLabel: "Food" },
-        { key: "sleep", label: "😴", fullLabel: "Sleep" },
-        { key: "exercise", label: "🏃", fullLabel: "Exercise" },
-        { key: "mental", label: "🧠", fullLabel: "Mental" }
+        { key: "water", icon: Droplets, fullLabel: "Water" },
+        { key: "food", icon: Utensils, fullLabel: "Food" },
+        { key: "sleep", icon: Moon, fullLabel: "Sleep" },
+        { key: "exercise", icon: Activity, fullLabel: "Exercise" },
+        { key: "mental", icon: Brain, fullLabel: "Mental" }
     ];
 
     if (loading) {
@@ -112,7 +114,7 @@ const TacticalHistory = () => {
             <div className="system-card border-dashed">
                 <div className="text-center py-8">
                     <div className="w-12 h-12 rounded-full bg-muted/10 flex items-center justify-center mx-auto mb-3">
-                        <span className="text-2xl">📂</span>
+                        <FolderOpen className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <p className="text-xs font-mono text-muted-foreground">NO DATA LOGGED YET</p>
                 </div>
@@ -137,7 +139,7 @@ const TacticalHistory = () => {
                     return (
                         <div key={i} className="flex flex-col items-center justify-end h-full flex-1 group relative">
                             {/* Tooltip */}
-                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-mono text-foreground bg-background/90 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-mono text-foreground bg-popover px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none shadow-md">
                                 {score}%
                             </div>
                             <div
@@ -158,7 +160,7 @@ const TacticalHistory = () => {
                 <table className="w-full text-center border-collapse min-w-[300px]">
                     <thead>
                         <tr>
-                            <th className="p-2 text-left text-[10px] font-mono text-muted-foreground sticky left-0 bg-black/40 backdrop-blur-sm">
+                            <th className="p-2 text-left text-[10px] font-mono text-muted-foreground sticky left-0 bg-background/80 backdrop-blur-sm z-10">
                                 <span className="hidden sm:inline">SYS</span>
                             </th>
                             {logs.map((log, i) => (
@@ -176,10 +178,10 @@ const TacticalHistory = () => {
                     <tbody>
                         {categories.map((cat) => (
                             <tr key={cat.key} className="border-b border-muted/20 last:border-0">
-                                <td className="p-2 text-left sticky left-0 bg-black/40 backdrop-blur-sm">
-                                    <span className="sm:hidden text-base">{cat.label}</span>
-                                    <span className="hidden sm:inline text-[10px] font-mono text-muted-foreground uppercase">
-                                        {cat.fullLabel}
+                                <td className="p-2 text-left sticky left-0 bg-background/80 backdrop-blur-sm z-10">
+                                    <span className="sm:hidden text-base"><cat.icon className="w-4 h-4" /></span>
+                                    <span className="hidden sm:inline text-[10px] font-mono text-muted-foreground uppercase flex items-center gap-2">
+                                        <cat.icon className="w-3 h-3" /> {cat.fullLabel}
                                     </span>
                                 </td>
                                 {logs.map((log, i) => {
@@ -201,15 +203,15 @@ const TacticalHistory = () => {
             {/* Legend */}
             <div className="mt-4 flex flex-wrap gap-3 sm:gap-4 text-[10px] font-mono text-muted-foreground justify-center">
                 <div className="flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary">●</span>
+                    <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary"><CheckCircle2 className="w-3 h-3" /></span>
                     <span>OPTIMAL</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">×</span>
+                    <span className="w-5 h-5 rounded-full bg-destructive/10 flex items-center justify-center text-destructive"><AlertCircle className="w-3 h-3" /></span>
                     <span>ISSUE</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500">○</span>
+                    <span className="w-5 h-5 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500"><Circle className="w-3 h-3" /></span>
                     <span>PENDING</span>
                 </div>
             </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Zap } from 'lucide-react';
 
 interface ActionRequiredModalProps {
     action: string | null;
@@ -12,11 +13,11 @@ export function ActionRequiredModal({ action, status, onConfirm }: ActionRequire
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-background/95 backdrop-blur-xl animate-in fade-in duration-500">
-            <div className="max-w-md w-full bg-black/40 border border-primary/30 rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-500 flex flex-col items-center text-center">
+            <div className="max-w-md w-full bg-card/90 border border-primary/30 rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-500 flex flex-col items-center text-center">
 
                 {/* Icon */}
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6 animate-pulse">
-                    <span className="text-4xl">⚡</span>
+                    <Zap className="w-10 h-10 text-primary" />
                 </div>
 
                 {/* Title */}
@@ -25,7 +26,7 @@ export function ActionRequiredModal({ action, status, onConfirm }: ActionRequire
                 </h2>
 
                 {/* Action Text */}
-                <h3 className="text-2xl sm:text-3xl font-display font-medium text-white mb-6 leading-tight">
+                <h3 className="text-2xl sm:text-3xl font-display font-medium text-foreground mb-6 leading-tight">
                     {action}
                 </h3>
 

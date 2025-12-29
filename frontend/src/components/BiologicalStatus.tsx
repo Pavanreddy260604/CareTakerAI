@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, Brain, Droplets, Moon } from 'lucide-react';
 
 interface BiologicalMetrics {
     sleepDebt: number;
@@ -45,14 +46,14 @@ export const BiologicalStatus: React.FC<Props> = ({ metrics }) => {
 
             {/* MODE ALERT - LOCKED */}
             {isLocked && (
-                <div className="flex flex-col items-center justify-center p-4 mb-4 border border-destructive bg-black/80 text-destructive text-center space-y-2 rounded-xl scanline">
-                    <span className="text-base sm:text-lg font-bold tracking-[0.15em] animate-pulse">
-                        ⚠ {systemMode} ENGAGED
+                <div className="flex flex-col items-center justify-center p-4 mb-4 border border-destructive bg-card text-destructive text-center space-y-2 rounded-xl scanline shadow-inner">
+                    <span className="text-base sm:text-lg font-bold tracking-[0.15em] animate-pulse flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5" /> {systemMode} ENGAGED
                     </span>
                     <span className="text-xs sm:text-sm font-mono text-muted-foreground">
                         BIOLOGICAL DEBT EXCEEDS SAFETY LIMITS
                     </span>
-                    <div className="text-3xl sm:text-4xl font-mono font-bold text-white mt-2">
+                    <div className="text-3xl sm:text-4xl font-mono font-bold text-foreground mt-2">
                         {recoveryBudget}H
                         <span className="text-xs sm:text-sm text-muted-foreground block">RECOVERY TIME</span>
                     </div>
@@ -62,10 +63,10 @@ export const BiologicalStatus: React.FC<Props> = ({ metrics }) => {
             {/* Compact Metrics Row: Capacity Only */}
             <div className="flex flex-wrap gap-3 mb-4 relative z-10">
                 {/* Cognitive Capacity */}
-                <div className="flex-1 min-w-[140px] bg-background/20 border border-primary/20 rounded-xl p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-[140px] bg-background/40 border border-primary/20 rounded-xl p-3 flex items-center gap-3">
                     <div className="flex-1">
-                        <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider block mb-1">
-                            Cognitive Capacity
+                        <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider block mb-1 flex items-center gap-1">
+                            <Brain className="w-3 h-3" /> Cognitive Capacity
                         </span>
                         <div className="h-1.5 bg-muted/20 rounded-full overflow-hidden">
                             <div
@@ -83,9 +84,9 @@ export const BiologicalStatus: React.FC<Props> = ({ metrics }) => {
             {/* Debts Grid - Responsive */}
             <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs font-mono relative z-10">
                 {/* Hydration Debt */}
-                <div className="bg-background/20 border border-muted/20 rounded-lg p-3 sm:p-4">
-                    <span className="text-muted-foreground text-[9px] sm:text-[10px] uppercase block mb-2">
-                        Hydro
+                <div className="bg-background/40 border border-muted/20 rounded-lg p-3 sm:p-4">
+                    <span className="text-muted-foreground text-[9px] sm:text-[10px] uppercase block mb-2 flex items-center gap-1">
+                        <Droplets className="w-3 h-3" /> Hydro
                     </span>
                     <div className="flex flex-col gap-2">
                         <div className="w-full h-1.5 bg-muted/20 rounded-full overflow-hidden">
@@ -101,9 +102,9 @@ export const BiologicalStatus: React.FC<Props> = ({ metrics }) => {
                 </div>
 
                 {/* Mental Debt */}
-                <div className="bg-background/20 border border-muted/20 rounded-lg p-3 sm:p-4">
-                    <span className="text-muted-foreground text-[9px] sm:text-[10px] uppercase block mb-2">
-                        Mental
+                <div className="bg-background/40 border border-muted/20 rounded-lg p-3 sm:p-4">
+                    <span className="text-muted-foreground text-[9px] sm:text-[10px] uppercase block mb-2 flex items-center gap-1">
+                        <Brain className="w-3 h-3" /> Mental
                     </span>
                     <div className="flex flex-col gap-2">
                         <div className="w-full h-1.5 bg-muted/20 rounded-full overflow-hidden">
@@ -122,7 +123,7 @@ export const BiologicalStatus: React.FC<Props> = ({ metrics }) => {
             {/* Prediction Warning */}
             {prediction && (
                 <div className="mt-4 pt-3 border-t border-destructive/30 text-xs font-mono text-destructive flex items-start gap-2 animate-pulse relative z-10">
-                    <span className="shrink-0">⚠</span>
+                    <span className="shrink-0"><AlertTriangle className="w-4 h-4" /></span>
                     <span>PREDICTION: <strong>{prediction}</strong></span>
                 </div>
             )}

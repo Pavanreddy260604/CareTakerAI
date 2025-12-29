@@ -1,3 +1,5 @@
+import { Shield, AlertTriangle, LogIn, Check } from "lucide-react";
+
 interface RecoveryTask {
   label: string;
   completed: boolean;
@@ -17,7 +19,7 @@ const RecoveryMode = ({ tasks, onToggleTask }: RecoveryModeProps) => {
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-xl bg-destructive/20 border border-destructive/30 flex items-center justify-center shrink-0">
-          <span className="text-xl">🛡️</span>
+          <Shield className="w-6 h-6 text-destructive" />
         </div>
         <div>
           <p className="text-sm font-mono font-bold text-destructive">RECOVERY MODE</p>
@@ -27,7 +29,9 @@ const RecoveryMode = ({ tasks, onToggleTask }: RecoveryModeProps) => {
 
       {/* Status message */}
       <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 mb-4">
-        <p className="text-sm text-foreground font-mono">⚠ Load exceeded. Recovery enforced.</p>
+        <p className="text-sm text-foreground font-mono flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-destructive" /> Load exceeded. Recovery enforced.
+        </p>
       </div>
 
       {/* Progress bar */}
@@ -51,16 +55,16 @@ const RecoveryMode = ({ tasks, onToggleTask }: RecoveryModeProps) => {
             key={task.label}
             onClick={() => onToggleTask(index)}
             className={`w-full text-left p-4 border rounded-xl transition-all active:scale-[0.98] ${task.completed
-                ? "border-primary/30 bg-primary/5"
-                : "border-muted/30 hover:border-muted/50 bg-black/20"
+              ? "border-primary/30 bg-primary/5"
+              : "border-muted/30 hover:border-muted/50 bg-card/50"
               }`}
           >
             <div className="flex items-center gap-3">
               <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${task.completed
-                  ? "border-primary bg-primary/20 text-primary"
-                  : "border-muted/50"
+                ? "border-primary bg-primary/20 text-primary"
+                : "border-muted/50"
                 }`}>
-                {task.completed && <span className="text-xs">✓</span>}
+                {task.completed && <Check className="w-3 h-3" />}
               </div>
               <span className={`text-sm flex-1 ${task.completed ? "text-muted-foreground line-through" : "text-foreground"}`}>
                 {task.label}

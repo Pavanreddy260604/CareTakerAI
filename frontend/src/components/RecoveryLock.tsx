@@ -56,7 +56,7 @@ export function RecoveryLock({ isVisible, capacity, metrics, onAcknowledge }: Re
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 transition-all duration-1000 bg-black/90 backdrop-blur-3xl"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 transition-all duration-1000 bg-background/95 backdrop-blur-3xl"
             style={{ opacity }}
         >
             {/* Red ambient glow for critical failure */}
@@ -78,7 +78,7 @@ export function RecoveryLock({ isVisible, capacity, metrics, onAcknowledge }: Re
                             <p className="text-destructive/60 font-mono text-xs">DIAGNOSTIC PROTOCOL: INITIATED</p>
                         </div>
 
-                        <div className="w-full max-w-xs space-y-2 font-mono text-xs text-destructive/80 text-left bg-black/50 p-4 rounded-lg border border-destructive/20">
+                        <div className="w-full max-w-xs space-y-2 font-mono text-xs text-destructive/80 text-left bg-card p-4 rounded-lg border border-destructive/20">
                             <p className="flex justify-between"><span>&gt; BIOLOGICAL_CLOCK</span> <span className="text-destructive">SYNC...</span></p>
                             <p className="flex justify-between"><span>&gt; HYDRATION_LVL</span> <span className="opacity-50">CHECKING...</span></p>
                             <p className="flex justify-between"><span>&gt; COGNITIVE_LOAD</span> <span className="opacity-50">WAITING...</span></p>
@@ -88,10 +88,10 @@ export function RecoveryLock({ isVisible, capacity, metrics, onAcknowledge }: Re
 
                 {/* STAGE 2: DIAGNOSIS */}
                 {(step === 'diagnose' || step === 'ready') && (
-                    <div className="w-full bg-black/80 p-8 rounded-[2rem] border border-destructive/50 shadow-[0_0_50px_-10px_rgba(239,68,68,0.3)] animate-in zoom-in-95 duration-500 relative overflow-hidden">
+                    <div className="w-full bg-card p-8 rounded-[2rem] border border-destructive/50 shadow-[0_0_50px_-10px_rgba(239,68,68,0.3)] animate-in zoom-in-95 duration-500 relative overflow-hidden">
 
                         {/* Shimmer overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-muted/5 to-transparent pointer-events-none" />
 
                         {/* Status Header */}
                         <div className="flex items-center justify-between mb-8 border-b border-destructive/20 pb-4">
@@ -104,8 +104,8 @@ export function RecoveryLock({ isVisible, capacity, metrics, onAcknowledge }: Re
 
                         {/* Primary Error */}
                         <div className="mb-8 text-left">
-                            <h2 className="text-4xl font-display font-medium text-white mb-2 leading-tight">{diagnosis}</h2>
-                            <p className="text-destructive/80 font-medium">{subtext}</p>
+                            <h2 className="text-4xl font-display font-medium text-foreground mb-2 leading-tight">{diagnosis}</h2>
+                            <p className="text-destructive font-medium">{subtext}</p>
                         </div>
 
                         {/* Visual Meters */}
@@ -120,9 +120,9 @@ export function RecoveryLock({ isVisible, capacity, metrics, onAcknowledge }: Re
                                         <span className={m.critical ? "text-destructive" : "text-muted-foreground"}>{m.label}</span>
                                         <span className={m.critical ? "text-destructive font-bold" : "text-muted-foreground"}>{m.val || 0}%</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-1.5 w-full bg-muted/20 rounded-full overflow-hidden">
                                         <div
-                                            className={`h-full transition-all duration-1000 ${m.critical ? "bg-destructive shadow-[0_0_10px_rgba(239,68,68,0.8)]" : "bg-white/20"}`}
+                                            className={`h-full transition-all duration-1000 ${m.critical ? "bg-destructive shadow-[0_0_10px_rgba(239,68,68,0.8)]" : "bg-muted"}`}
                                             style={{ width: `${m.val || 0}%` }}
                                         />
                                     </div>
@@ -140,7 +140,7 @@ export function RecoveryLock({ isVisible, capacity, metrics, onAcknowledge }: Re
                             </button>
                         )}
                         {step !== 'ready' && (
-                            <div className="w-full py-4 rounded-xl bg-white/5 border border-white/10 text-muted-foreground flex items-center justify-center gap-3">
+                            <div className="w-full py-4 rounded-xl bg-muted/20 border border-muted/30 text-muted-foreground flex items-center justify-center gap-3">
                                 <span className="animate-pulse">CALCULATING RECOVERY PATH...</span>
                             </div>
                         )}

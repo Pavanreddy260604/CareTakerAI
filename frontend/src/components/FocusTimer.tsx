@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
+import { Brain, X, Play, Pause, Square, SkipForward, Clock, History, Calendar, PartyPopper, Sparkles, Zap, Flame } from 'lucide-react';
 
 interface FocusTimerProps {
     onSessionComplete?: (duration: number) => void;
@@ -162,10 +163,12 @@ export function FocusTimer({ onSessionComplete, onClose, capacity }: FocusTimerP
         <div className="fixed inset-0 bg-background/95 backdrop-blur-3xl z-50 flex flex-col safe-area-bottom animate-fade-in">
             {/* Header */}
             <div className="flex justify-between items-center p-6 w-full max-w-lg mx-auto">
-                <h2 className="text-2xl font-display font-medium text-white flex items-center gap-2">
-                    <span className="text-3xl">🧘</span> Focus Zone
+                <h2 className="text-2xl font-display font-medium text-foreground flex items-center gap-2">
+                    <Brain className="w-8 h-8 text-primary" /> Focus Zone
                 </h2>
-                <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all">✕</button>
+                <button onClick={onClose} className="w-10 h-10 rounded-full bg-muted/20 hover:bg-muted/30 flex items-center justify-center transition-all">
+                    <X className="w-6 h-6 text-muted-foreground" />
+                </button>
             </div>
 
             {/* Main Content */}
@@ -181,7 +184,7 @@ export function FocusTimer({ onSessionComplete, onClose, capacity }: FocusTimerP
                             </linearGradient>
                         </defs>
                         {/* Track */}
-                        <circle cx="130" cy="130" r="120" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+                        <circle cx="130" cy="130" r="120" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted/10" />
                         {/* Progress */}
                         <circle
                             cx="130" cy="130" r="120" fill="none" strokeWidth="12" strokeLinecap="round"
@@ -195,18 +198,18 @@ export function FocusTimer({ onSessionComplete, onClose, capacity }: FocusTimerP
                     {/* Center Content */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <div className="flex items-baseline gap-1">
-                            <span className="text-7xl font-display font-bold tracking-tighter text-white tabular-nums">
+                            <span className="text-7xl font-display font-bold tracking-tighter text-foreground tabular-nums">
                                 {minutes.toString().padStart(2, '0')}
                             </span>
-                            <span className={`text-6xl font-display font-bold text-white/50 -translate-y-2 ${state === 'focus' ? 'animate-pulse' : ''}`}>:</span>
-                            <span className="text-7xl font-display font-bold tracking-tighter text-white tabular-nums">
+                            <span className={`text-6xl font-display font-bold text-muted-foreground/50 -translate-y-2 ${state === 'focus' ? 'animate-pulse' : ''}`}>:</span>
+                            <span className="text-7xl font-display font-bold tracking-tighter text-foreground tabular-nums">
                                 {seconds.toString().padStart(2, '0')}
                             </span>
                         </div>
 
                         <div className={`mt-4 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md ${state === 'break' ? 'bg-amber-500/20 text-amber-400' :
                             state === 'focus' ? 'bg-primary/20 text-primary' :
-                                'bg-white/5 text-muted-foreground'
+                                'bg-muted/20 text-muted-foreground'
                             }`}>
                             {state === 'idle' ? 'Ready to Focus' : state === 'break' ? 'Recharging' : state === 'focus' ? 'Deep Work' : 'Paused'}
                         </div>
@@ -221,8 +224,8 @@ export function FocusTimer({ onSessionComplete, onClose, capacity }: FocusTimerP
                                 key={d.value}
                                 onClick={() => { setSelectedDuration(d.value); setTimeRemaining(d.value); }}
                                 className={`p-4 rounded-2xl transition-all duration-300 flex flex-col items-center ${selectedDuration === d.value
-                                    ? 'bg-primary text-black scale-105 shadow-glow'
-                                    : 'bg-white/5 hover:bg-white/10 text-muted-foreground'
+                                    ? 'bg-primary text-primary-foreground scale-105 shadow-glow'
+                                    : 'bg-muted/20 hover:bg-muted/30 text-muted-foreground'
                                     }`}
                             >
                                 <span className="text-xl font-bold font-display">{d.label}</span>
@@ -235,24 +238,24 @@ export function FocusTimer({ onSessionComplete, onClose, capacity }: FocusTimerP
                 {/* Controls */}
                 <div className="flex gap-4 w-full">
                     {state === 'idle' ? (
-                        <button onClick={startFocus} className="btn-primary w-full text-lg shadow-glow">
-                            Start Session
+                        <button onClick={startFocus} className="btn-primary w-full text-lg shadow-glow flex items-center justify-center gap-2">
+                            <Play className="w-5 h-5 fill-current" /> Start Session
                         </button>
                     ) : (
                         <>
                             {state !== 'break' && (
                                 <>
-                                    <button onClick={pauseResume} className="btn-glass flex-1 border-white/10">
-                                        {state === 'paused' ? 'Resume' : 'Pause'}
+                                    <button onClick={pauseResume} className="btn-glass flex-1 border-white/10 text-foreground flex items-center justify-center gap-2">
+                                        {state === 'paused' ? <><Play className="w-4 h-4 fill-current" /> Resume</> : <><Pause className="w-4 h-4 fill-current" /> Pause</>}
                                     </button>
-                                    <button onClick={stopTimer} className="btn-glass flex-1 border-rose-500/30 text-rose-400 hover:bg-rose-500/10">
-                                        End Session
+                                    <button onClick={stopTimer} className="btn-glass flex-1 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 flex items-center justify-center gap-2">
+                                        <Square className="w-4 h-4 fill-current" /> End Session
                                     </button>
                                 </>
                             )}
                             {state === 'break' && (
-                                <button onClick={() => { setState('idle'); setTimeRemaining(selectedDuration); }} className="btn-secondary w-full">
-                                    Skip Break
+                                <button onClick={() => { setState('idle'); setTimeRemaining(selectedDuration); }} className="btn-secondary w-full flex items-center justify-center gap-2">
+                                    <SkipForward className="w-5 h-5" /> Skip Break
                                 </button>
                             )}
                         </>
@@ -263,18 +266,27 @@ export function FocusTimer({ onSessionComplete, onClose, capacity }: FocusTimerP
 
             {/* Footer Stats */}
             <div className="p-6 w-full max-w-lg mx-auto">
-                <div className="glass-card p-4 grid grid-cols-3 divide-x divide-white/10">
+                <div className="glass-card p-4 grid grid-cols-3 divide-x divide-border/20">
                     <div className="text-center">
-                        <span className="block text-2xl font-bold text-white">{sessionsCompleted}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Sessions</span>
+                        <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                            <History className="w-3 h-3" />
+                            <span className="text-[10px] uppercase tracking-wider">Sessions</span>
+                        </div>
+                        <span className="block text-2xl font-bold text-foreground">{sessionsCompleted}</span>
                     </div>
                     <div className="text-center">
+                        <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                            <Clock className="w-3 h-3" />
+                            <span className="text-[10px] uppercase tracking-wider">Minutes</span>
+                        </div>
                         <span className="block text-2xl font-bold text-primary">{Math.round(totalFocusTime / 60)}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Minutes</span>
                     </div>
                     <div className="text-center">
-                        <span className="block text-2xl font-bold text-amber-400">{weeklyStats?.totalSessions || 0}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Weekly</span>
+                        <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                            <Calendar className="w-3 h-3" />
+                            <span className="text-[10px] uppercase tracking-wider">Weekly</span>
+                        </div>
+                        <span className="block text-2xl font-bold text-amber-500">{weeklyStats?.totalSessions || 0}</span>
                     </div>
                 </div>
             </div>

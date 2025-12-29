@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { Mic, Zap, Loader2 } from 'lucide-react';
 
 interface VoiceLoggerProps {
     onUpdate: (data: any) => void;
@@ -76,22 +77,22 @@ export function VoiceLogger({ onUpdate }: VoiceLoggerProps) {
         <button
             onClick={toggleListening}
             disabled={isProcessing}
-            className={`bento-card relative overflow-hidden group p-4 flex flex-col items-center justify-center transition-all duration-300 ${isListening ? 'bg-red-500/10 border-red-500/50' : 'bg-primary/5 border-primary/20 hover:border-primary/50'
+            className={`bento-card relative overflow-hidden group p-4 flex flex-col items-center justify-center transition-all duration-300 ${isListening ? 'bg-destructive/10 border-destructive/50' : 'bg-primary/5 border-primary/20 hover:border-primary/50'
                 }`}
         >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-2 transition-all duration-300 ${isListening ? 'bg-red-500 text-white animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]' :
-                isProcessing ? 'bg-yellow-500 text-black animate-spin' :
-                    'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-black'
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-2 transition-all duration-300 ${isListening ? 'bg-destructive text-destructive-foreground animate-pulse shadow-destructive/50 shadow-lg' :
+                isProcessing ? 'bg-yellow-500 text-primary-foreground animate-spin' :
+                    'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
                 }`}>
-                {isProcessing ? '⚡' : isListening ? '🎙️' : '🎤'}
+                {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : isListening ? <Mic className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
             </div>
 
-            <p className="text-sm font-display font-medium text-muted-foreground group-hover:text-white transition-colors">
+            <p className="text-sm font-display font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                 {isListening ? 'Listening...' : isProcessing ? 'Processing...' : 'Voice Log'}
             </p>
 
             {isListening && (
-                <div className="absolute inset-0 border-2 border-red-500 rounded-3xl animate-ping opacity-20" />
+                <div className="absolute inset-0 border-2 border-destructive rounded-3xl animate-ping opacity-20" />
             )}
         </button>
     );

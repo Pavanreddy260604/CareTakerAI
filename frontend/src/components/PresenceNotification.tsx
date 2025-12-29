@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Hand, X } from "lucide-react";
 
 interface PresenceNotificationProps {
   show: boolean;
@@ -34,7 +35,7 @@ const PresenceNotification = ({ show, onDismiss }: PresenceNotificationProps) =>
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
-            <span className="text-lg">👋</span>
+            <Hand className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-primary text-sm font-mono font-bold">Presence recorded</p>
@@ -48,9 +49,9 @@ const PresenceNotification = ({ show, onDismiss }: PresenceNotificationProps) =>
                 onDismiss();
               }, 300);
             }}
-            className="text-muted-foreground hover:text-white p-1 transition-colors"
+            className="text-muted-foreground hover:text-foreground p-1 transition-colors"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>

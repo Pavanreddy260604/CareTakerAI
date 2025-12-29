@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { Download, X, FileJson, FileSpreadsheet, Loader2, Check, AlertCircle } from 'lucide-react';
 
 interface DataExportProps {
     onClose: () => void;
@@ -113,22 +114,22 @@ export function DataExport({ onClose }: DataExportProps) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-background border border-muted/30 rounded-2xl max-w-md w-full p-6 animate-fade-in">
+        <div className="fixed inset-0 bg-background/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-card border border-border shadow-lg rounded-2xl max-w-md w-full p-6 animate-in zoom-in-50 duration-200">
                 {/* Header */}
                 <div className="flex justify-between items-start mb-6">
                     <div>
                         <h2 className="text-xl font-mono font-bold text-primary flex items-center gap-2">
-                            <span>📤</span>
+                            <Download className="w-5 h-5" />
                             <span>Export Data</span>
                         </h2>
                         <p className="text-xs text-muted-foreground mt-1">Download your health history</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-muted-foreground hover:text-white text-xl transition-colors"
+                        className="text-muted-foreground hover:text-foreground text-xl transition-colors p-1"
                     >
-                        ✕
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -138,39 +139,40 @@ export function DataExport({ onClose }: DataExportProps) {
                     <div className="flex gap-2">
                         <button
                             onClick={() => setExportType('json')}
-                            className={`flex-1 p-4 rounded-xl border transition-all ${exportType === 'json'
+                            className={`flex-1 p-4 rounded-xl border transition-all flex flex-col items-center ${exportType === 'json'
                                 ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-muted/30 text-muted-foreground hover:border-primary/50'
+                                : 'border-border text-muted-foreground hover:border-primary/50'
                                 }`}
                         >
-                            <div className="text-2xl mb-2">📋</div>
+                            <FileJson className="w-8 h-8 mb-2" />
                             <div className="font-mono font-bold">JSON</div>
-                            <div className="text-[10px] text-muted-foreground mt-1">Full data with AI responses</div>
+                            <div className="text-[10px] text-muted-foreground mt-1 text-center">Full data with AI responses</div>
                         </button>
                         <button
                             onClick={() => setExportType('csv')}
-                            className={`flex-1 p-4 rounded-xl border transition-all ${exportType === 'csv'
+                            className={`flex-1 p-4 rounded-xl border transition-all flex flex-col items-center ${exportType === 'csv'
                                 ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-muted/30 text-muted-foreground hover:border-primary/50'
+                                : 'border-border text-muted-foreground hover:border-primary/50'
                                 }`}
                         >
-                            <div className="text-2xl mb-2">📊</div>
+                            <FileSpreadsheet className="w-8 h-8 mb-2" />
                             <div className="font-mono font-bold">CSV</div>
-                            <div className="text-[10px] text-muted-foreground mt-1">Spreadsheet compatible</div>
+                            <div className="text-[10px] text-muted-foreground mt-1 text-center">Spreadsheet compatible</div>
                         </button>
                     </div>
                 </div>
 
                 {/* Info */}
-                <div className="bg-muted/10 border border-muted/20 rounded-xl p-4 mb-6">
-                    <p className="text-xs font-mono text-muted-foreground">
+                <div className="bg-muted/30 border border-muted/50 rounded-xl p-4 mb-6">
+                    <p className="text-xs font-mono text-muted-foreground flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-primary" />
                         <strong className="text-foreground">What's included:</strong>
                     </p>
-                    <ul className="text-xs text-muted-foreground mt-2 space-y-1">
-                        <li>• All health check-in records</li>
-                        <li>• AI responses and recommendations</li>
-                        <li>• Capacity scores and metrics</li>
-                        <li>• Account information</li>
+                    <ul className="text-xs text-muted-foreground mt-2 space-y-1 pl-6 list-disc">
+                        <li>All health check-in records</li>
+                        <li>AI responses and recommendations</li>
+                        <li>Capacity scores and metrics</li>
+                        <li>Account information</li>
                     </ul>
                 </div>
 
@@ -178,24 +180,24 @@ export function DataExport({ onClose }: DataExportProps) {
                 <button
                     onClick={exportData}
                     disabled={isExporting}
-                    className="w-full py-4 bg-primary text-black font-mono font-bold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-primary text-primary-foreground font-mono font-bold rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-primary/20"
                 >
                     {isExporting ? (
                         <>
-                            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            <Loader2 className="w-5 h-5 animate-spin" />
                             <span>Exporting...</span>
                         </>
                     ) : (
                         <>
-                            <span>📥</span>
+                            <Download className="w-5 h-5" />
                             <span>Download {exportType.toUpperCase()}</span>
                         </>
                     )}
                 </button>
 
                 {/* Privacy Note */}
-                <p className="text-[10px] text-center text-muted-foreground/50 mt-4">
-                    Your data is exported locally and never sent to external servers.
+                <p className="text-[10px] text-center text-muted-foreground/50 mt-4 flex items-center justify-center gap-1">
+                    <Check className="w-3 h-3" /> Your data is exported locally and never sent to external servers.
                 </p>
             </div>
         </div>

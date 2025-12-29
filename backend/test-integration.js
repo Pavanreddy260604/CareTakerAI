@@ -1,10 +1,14 @@
 const { processHealthData } = require("./src/services/aiService");
+const connectDB = require('./src/config/db');
+const mongoose = require('mongoose');
 require("dotenv").config();
 
 async function testIntegration() {
+    await connectDB();
+
     const context = {
         userName: "TestUser",
-        userId: "test-id",
+        userId: "507f1f77bcf86cd799439011", // Valid dummy ObjectId
         health: {
             water: "low",
             food: "none",
@@ -31,11 +35,18 @@ async function testIntegration() {
     };
 
     console.log("Testing Gemini Integration...");
-    const result = await processHealthData(context);
-    console.log("\nRESULT:");
-    console.log("System Status:", result.systemStatus);
-    console.log("Action:", result.action);
-    console.log("Explanation:", result.explanation);
+    try {
+        const result = await processHealthData(context);
+        console.log("\nRESULT:");
+        console.log("System Status:", result.systemStatus);
+        console.log("Action:", result.action);
+        console.log("Explanation:", result.explanation);
+    } catch (error) {
+        console.error("Test Error:", error);
+    } finally {
+        await mongoose.connection.close();
+        process.exit(0);
+    }
 }
 
 testIntegration();

@@ -6,6 +6,26 @@ import { RecoveryLock } from "@/components/RecoveryLock";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 
+// Icons
+import {
+  Droplets,
+  Utensils,
+  Activity,
+  Moon,
+  Brain,
+  CheckCircle2,
+  BarChart2,
+  Timer,
+  Trophy,
+  Target,
+  Download,
+  Sparkles,
+  AlertTriangle,
+  Flame,
+  Zap,
+  Leaf
+} from "lucide-react";
+
 // All Feature Components
 
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
@@ -23,13 +43,13 @@ import { BiologicalStatus } from "@/components/BiologicalStatus";
 import { ActionRequiredModal } from "@/components/ActionRequiredModal";
 import ConsistencyState from "@/components/ConsistencyState";
 
-// Task categories mapped to new design
+// Task categories mapped to new design - Using Icons
 const TASK_CATEGORIES = {
-  water: { label: "Hydration", icon: "💧", question: "Water intake?", unit: "Liters" },
-  food: { label: "Nutrition", icon: "🍏", question: "Meals today?", unit: "Meals" },
-  exercise: { label: "Movement", icon: "🏃", question: "Activity?", unit: "Minutes" },
-  sleep: { label: "Rest", icon: "😴", question: "Sleep last night?", unit: "Hours" },
-  mental: { label: "Mind", icon: "🧠", question: "Stress level?", unit: "Level" },
+  water: { label: "Hydration", icon: Droplets, question: "Water intake?", unit: "Liters" },
+  food: { label: "Nutrition", icon: Utensils, question: "Meals today?", unit: "Meals" },
+  exercise: { label: "Movement", icon: Flame, question: "Activity?", unit: "Minutes" },
+  sleep: { label: "Rest", icon: Moon, question: "Sleep last night?", unit: "Hours" },
+  mental: { label: "Mind", icon: Brain, question: "Stress level?", unit: "Level" },
 };
 
 type CategoryKey = keyof typeof TASK_CATEGORIES;
@@ -352,9 +372,9 @@ const Index = () => {
               <div className="mt-6 flex justify-end">
                 {todayCheckedIn ? (
                   <div className="flex items-center gap-3 text-muted-foreground">
-                    <span className="text-xl">✅</span>
+                    <CheckCircle2 className="w-6 h-6 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-white">Checked in for today</p>
+                      <p className="text-sm font-medium text-foreground">Checked in for today</p>
                       <p className="text-xs">Next check-in in <span className="text-primary font-bold">{nextCheckInTime}</span></p>
                     </div>
                   </div>
@@ -379,12 +399,12 @@ const Index = () => {
           <div className="bento-card p-4 hover:border-primary/30 cursor-pointer group flex flex-col justify-between"
             onClick={() => setShowAnalytics(true)}>
             <div className="flex justify-between items-start">
-              <span className="text-2xl">📊</span>
+              <BarChart2 className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
               <span className="text-xs font-bold text-muted-foreground group-hover:text-primary transition-colors">VIEW</span>
             </div>
             <div className="mt-2">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Analytics</h3>
-              <p className="text-lg font-display font-medium text-white">Trends & Insights</p>
+              <p className="text-lg font-display font-medium text-foreground">Trends & Insights</p>
             </div>
           </div>
 
@@ -392,12 +412,12 @@ const Index = () => {
           <div className="bento-card p-4 hover:border-cyan-500/30 cursor-pointer group flex flex-col justify-between"
             onClick={() => setShowFocusTimer(true)}>
             <div className="flex justify-between items-start">
-              <span className="text-2xl">🧘</span>
+              <Timer className="w-8 h-8 text-muted-foreground group-hover:text-cyan-500 transition-colors" />
               <span className="text-xs font-bold text-muted-foreground group-hover:text-cyan-500 transition-colors">START</span>
             </div>
             <div className="mt-2">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Deep Work</h3>
-              <p className="text-lg font-display font-medium text-white">Focus Timer</p>
+              <p className="text-lg font-display font-medium text-foreground">Focus Timer</p>
             </div>
           </div>
 
@@ -405,12 +425,12 @@ const Index = () => {
           <div className="bento-card p-4 hover:border-amber-500/30 cursor-pointer group flex flex-col justify-between"
             onClick={() => setShowAchievements(true)}>
             <div className="flex justify-between items-start">
-              <span className="text-2xl">🏆</span>
+              <Trophy className="w-8 h-8 text-muted-foreground group-hover:text-amber-500 transition-colors" />
               <span className="text-xs font-bold text-muted-foreground group-hover:text-amber-500 transition-colors">VIEW</span>
             </div>
             <div className="mt-2">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Trophies</h3>
-              <p className="text-lg font-display font-medium text-white">Achievements</p>
+              <p className="text-lg font-display font-medium text-foreground">Achievements</p>
             </div>
           </div>
 
@@ -418,12 +438,12 @@ const Index = () => {
           <div className="bento-card p-4 hover:border-emerald-500/30 cursor-pointer group flex flex-col justify-between"
             onClick={() => setShowGoals(true)}>
             <div className="flex justify-between items-start">
-              <span className="text-2xl">🎯</span>
+              <Target className="w-8 h-8 text-muted-foreground group-hover:text-emerald-500 transition-colors" />
               <span className="text-xs font-bold text-muted-foreground group-hover:text-emerald-500 transition-colors">EDIT</span>
             </div>
             <div className="mt-2">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Targets</h3>
-              <p className="text-lg font-display font-medium text-white">My Goals</p>
+              <p className="text-lg font-display font-medium text-foreground">My Goals</p>
             </div>
           </div>
 
@@ -431,12 +451,12 @@ const Index = () => {
           <div className="bento-card p-4 hover:border-violet-500/30 cursor-pointer group flex flex-col justify-between"
             onClick={() => setShowDataExport(true)}>
             <div className="flex justify-between items-start">
-              <span className="text-2xl">📤</span>
+              <Download className="w-8 h-8 text-muted-foreground group-hover:text-violet-500 transition-colors" />
               <span className="text-xs font-bold text-muted-foreground group-hover:text-violet-500 transition-colors">EXPORT</span>
             </div>
             <div className="mt-2">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Backup</h3>
-              <p className="text-lg font-display font-medium text-white">Export Data</p>
+              <p className="text-lg font-display font-medium text-foreground">Export Data</p>
             </div>
           </div>
 
@@ -447,6 +467,7 @@ const Index = () => {
           {Object.entries(TASK_CATEGORIES).map(([key, info]) => {
             const k = key as CategoryKey;
             const data = healthData[k];
+            const Icon = info.icon;
 
             // Define cycle order for each category
             const getNextStatus = (current: StatusValue, category: CategoryKey): StatusValue => {
@@ -478,7 +499,7 @@ const Index = () => {
             // Dynamic styling based on status
             const getStatusColor = () => {
               if (!data.logged) return 'hover:border-primary/30';
-              if (data.status === 'HIGH' || data.status === 'LOW' || data.status === 'PENDING') return 'bg-red-500/10 border-red-500/50';
+              if (data.status === 'HIGH' || data.status === 'LOW' || data.status === 'PENDING') return 'bg-destructive/10 border-destructive/50';
               return 'bg-primary/5 border-primary/20';
             };
 
@@ -487,8 +508,8 @@ const Index = () => {
                 className={`bento-card p-4 group cursor-pointer transition-all duration-300 ${getStatusColor()}`}
                 onClick={handleCardClick}>
                 <div className="flex justify-between items-start">
-                  <span className="text-2xl group-hover:scale-110 transition-transform duration-300">{info.icon}</span>
-                  {data.logged && <span className={`text-xs font-bold ${data.status === 'HIGH' || data.status === 'LOW' ? 'text-red-400' : 'text-primary'}`}>
+                  <Icon className="w-8 h-8 text-foreground group-hover:scale-110 transition-transform duration-300" />
+                  {data.logged && <span className={`text-xs font-bold ${data.status === 'HIGH' || data.status === 'LOW' ? 'text-destructive' : 'text-primary'}`}>
                     {data.status}
                   </span>}
                 </div>
@@ -514,7 +535,7 @@ const Index = () => {
               onClick={() => setShowFocusTimer(true)}
               className="btn-primary flex items-center gap-2 px-6 py-3 shadow-glow hover:scale-105 transition-all"
             >
-              <span>🧘</span>
+              <Zap className="w-5 h-5" />
               Enter Focus Zone
             </button>
           </div>
@@ -531,19 +552,20 @@ const Index = () => {
 
           {/* 6. AI INSIGHT CARD (Wide) - Shows after check-in */}
           {aiResponse && aiResponse.explanation && (
-            <div className="col-span-2 md:col-span-4 bento-card p-6 border-white/10 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+            <div className="col-span-2 md:col-span-4 bento-card p-6 border-border/10 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  ✨
+                <div className="w-10 h-10 rounded-full bg-background/50 flex items-center justify-center shrink-0 border border-border/50">
+                  <Sparkles className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-display font-medium text-white/90 mb-1">Wellness Insight</h3>
+                  <h3 className="text-lg font-display font-medium text-foreground mb-1">Wellness Insight</h3>
                   <p className="text-muted-foreground font-sans leading-relaxed">
                     {aiResponse.explanation}
                   </p>
                   {aiResponse.prediction && (
-                    <div className="mt-3 inline-block px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-mono text-amber-400">
-                      ⚠ {aiResponse.prediction}
+                    <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-mono text-amber-500">
+                      <AlertTriangle className="w-3 h-3" />
+                      {aiResponse.prediction}
                     </div>
                   )}
                 </div>
