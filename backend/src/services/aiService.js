@@ -405,4 +405,56 @@ function fallbackResponse(context) {
     };
 }
 
+// ============================================
+// VOICE COMMAND PARSING
+// ============================================
+async function parseVoiceHealthLog(text) {
+    const prompt = `
+    You are an AI assistant parsing natural language health logs.
+    User said: "${text}"
+
+    Extract the following health data if mentioned:
+    - water (OK/LOW/HIGH/PENDING) - OK if they drank water, LOW if thirsty/forgot
+    - food (OK/LOW/HIGH/PENDING) - OK if ate, LOW if hungry/skipped
+    - sleep (OK/LOW/HIGH/PENDING) - OK if slept well (>6h), LOW if tired/bad sleep
+    - exercise (DONE/PENDING) - DONE if they exercised/moved, PENDING if not
+    - mental (OK/HIGH/LOW) - HIGH if stressed/anxious, LOW if sad/depressed, OK if good/neutral
+
+    Return ONLY a JSON object:
+    {
+      "water": "status",
+      "food": "status", 
+      "sleep": "status",
+      "exercise": "status",
+      "mental": "status"
+    }
+    Only include fields that are explicitly mentioned or clearly implied.
+    `;
+
+    try {
+        const result = await geminiModel.generateContent(prompt);
+        const response = await result.response;
+        const jsonText = response.text().match(/\{[\s\S]*\}/)?.[0];
+
+        if (!jsonText) return { success: false, error: 'No structured data parsed' };
+
+        return {
+            success: true,
+            health: JSON.parse(jsonText),
+            raw: text
+        };
+    } catch (error) {
+        console.error('Voice parse error:', error);
+        // Fallback to basic regex if AI fails
+        const health = {};
+        const lower = text.toLowerCase();
+        if (lower.includes('water') || lower.includes('drink')) health.water = 'OK';
+        if (lower.includes('food') || lower.includes('eat') || lower.includes('meal')) health.food = 'OK';
+        if (lower.includes('sleep') || lower.includes('tired')) health.sleep = lower.includes('tired') ? 'LOW' : 'OK';
+        if (lower.includes('exercis') || lower.includes('run') || lower.includes('workout')) health.exercise = 'DONE';
+
+        return { success: true, health, usedFallback: true };
+    }
+}
+
 module.exports = { processHealthData, parseVoiceHealthLog };
