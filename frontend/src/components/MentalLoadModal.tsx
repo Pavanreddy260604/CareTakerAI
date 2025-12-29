@@ -74,8 +74,8 @@ const MentalLoadModal: React.FC<MentalLoadModalProps> = ({
         switch (s) {
             case 'HIGH': return 'text-red-500 bg-red-500/10';
             case 'LOW': return 'text-amber-500 bg-amber-500/10';
-            case 'OK': return 'text-green-500 bg-green-500/10';
-            default: return 'text-violet-500 bg-violet-500/10';
+            case 'OK': return 'text-primary bg-primary/10';
+            default: return 'text-primary bg-primary/10';
         }
     };
 
@@ -103,31 +103,31 @@ const MentalLoadModal: React.FC<MentalLoadModalProps> = ({
                             Close
                         </button>
                         <div className="flex items-center gap-2">
-                            <Brain className="w-5 h-5 text-violet-500" />
+                            <Brain className="w-5 h-5 text-primary" />
                             <h1 className="text-base font-display font-semibold text-foreground">Mind Check</h1>
                         </div>
-                        <div className="w-12" /> {/* Spacer */}
+                        <div className="w-12" />
                     </div>
                 </div>
 
                 <div className="px-4 py-6">
                     {step === 'loading' ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
-                            <div className="w-16 h-16 rounded-full bg-violet-500/10 flex items-center justify-center">
-                                <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+                            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
                             </div>
                             <p className="text-sm text-muted-foreground animate-pulse">Preparing your question...</p>
                         </div>
                     ) : step === 'question' ? (
                         <div className="space-y-6">
                             {/* AI Question Card */}
-                            <div className="p-5 rounded-2xl bg-gradient-to-br from-violet-500/5 to-purple-500/5 border border-violet-500/10">
+                            <div className="p-5 rounded-2xl bg-muted/30 border border-border/50">
                                 <div className="flex items-start gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg">
-                                        <Sparkles className="w-5 h-5 text-white" />
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                        <Sparkles className="w-5 h-5 text-primary" />
                                     </div>
                                     <div className="pt-2">
-                                        <p className="text-xs text-violet-500 font-medium uppercase tracking-wider mb-1">Today's Question</p>
+                                        <p className="text-xs text-primary font-medium uppercase tracking-wider mb-1">Today's Question</p>
                                     </div>
                                 </div>
                                 <p className="text-lg font-medium text-foreground leading-relaxed">{question}</p>
@@ -145,7 +145,7 @@ const MentalLoadModal: React.FC<MentalLoadModalProps> = ({
                                     onChange={(e) => setAnswer(e.target.value)}
                                     placeholder="e.g., calm, stressed, tired..."
                                     maxLength={30}
-                                    className="w-full bg-card border border-border/50 rounded-xl px-4 py-4 text-lg text-center font-medium placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 transition-all"
+                                    className="w-full bg-card border border-border/50 rounded-xl px-4 py-4 text-lg text-center font-medium placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                                 />
                             </div>
 
@@ -153,7 +153,7 @@ const MentalLoadModal: React.FC<MentalLoadModalProps> = ({
                             <button
                                 onClick={handleSubmit}
                                 disabled={!answer.trim()}
-                                className="w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/20 active:opacity-90 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+                                className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 active:opacity-90 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
                             >
                                 <Send className="w-4 h-4" />
                                 Analyze
@@ -167,10 +167,10 @@ const MentalLoadModal: React.FC<MentalLoadModalProps> = ({
                     ) : step === 'analyzing' ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
                             <div className="relative">
-                                <div className="w-20 h-20 rounded-full bg-violet-500/10 flex items-center justify-center">
-                                    <Brain className="w-10 h-10 text-violet-500 animate-pulse" />
+                                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <Brain className="w-10 h-10 text-primary animate-pulse" />
                                 </div>
-                                <Sparkles className="absolute -top-1 -right-1 w-6 h-6 text-amber-500 animate-bounce" />
+                                <Sparkles className="absolute -top-1 -right-1 w-6 h-6 text-primary animate-bounce" />
                             </div>
                             <div>
                                 <p className="text-base font-bold text-foreground mb-1">Analyzing...</p>
