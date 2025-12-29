@@ -270,15 +270,21 @@ const Index = () => {
       <ActionRequiredModal
         action={bioMetrics?.requiredAction || null}
         status={bioMetrics?.requiredAction === "Continue Observation" ? "COMPLETED" : "PENDING"}
-        onConfirm={() => {
-          // Confirmation logic could be added here or just close for now
-          toast({ title: "Action Completed", description: "System updated." });
+        onConfirm={async () => {
+          try {
+            await api.completeAction();
+            // Optimistically update local state to remove the modal immediately
+            setBioMetrics(prev => prev ? ({ ...prev, requiredAction: null }) : null);
+            toast({ title: "Action Completed", description: "System updated." });
+          } catch (e) {
+            toast({ title: "Error", description: "Could not sync completion.", variant: "destructive" });
+          }
         }}
       />
 
       {/* Full-Screen Modals */}
       {showAnalytics && <AnalyticsDashboard onClose={() => setShowAnalytics(false)} />}
-      {showFocusTimer && <FocusTimer onClose={() => setShowFocusTimer(false)} />}
+      {showFocusTimer && <FocusTimer onClose={() => setShowFocusTimer(false)} capacity={bioMetrics?.capacity || 100} />}
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
       {showGoals && <GoalSettings onClose={() => setShowGoals(false)} />}
       {showDataExport && <DataExport onClose={() => setShowDataExport(false)} />}

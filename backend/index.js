@@ -506,6 +506,18 @@ app.post('/api/feedback', authMiddleware, async (req, res) => {
     }
 });
 
+// Complete Action Endpoint
+app.post('/api/action/complete', authMiddleware, async (req, res) => {
+    try {
+        const { userId } = req.user;
+        console.log(`User ${userId} completed action.`);
+        res.json({ success: true, message: 'Action marked as complete' });
+    } catch (error) {
+        console.error('Complete action error:', error);
+        res.status(500).json({ error: 'Failed to complete action' });
+    }
+});
+
 // API Endpoint: Get Feedback Analytics (PROTECTED)
 app.get('/api/feedback/stats', authMiddleware, async (req, res) => {
     try {

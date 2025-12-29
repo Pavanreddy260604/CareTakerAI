@@ -574,4 +574,11 @@ export const api = {
     }> {
         return authFetch(`${API_BASE_URL}/focus/stats`, {});
     },
+
+    // Complete Action
+    async completeAction() {
+        return authFetch(`${API_BASE_URL}/action/complete`, {
+            method: 'POST',
+        });
+    },
 };
