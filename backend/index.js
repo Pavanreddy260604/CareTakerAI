@@ -160,6 +160,32 @@ app.get('/api/user/stats', authMiddleware, async (req, res) => {
     }
 });
 
+// Helper: Calculate next hydration reminder time
+function calculateNextReminder(user) {
+    if (!user.hydration?.remindersEnabled) return null;
+
+    const interval = user.hydration.reminderInterval || 60;
+    const now = new Date();
+
+    // Default: simple interval from now
+    const nextTime = new Date(now.getTime() + interval * 60 * 1000);
+
+    // Smart adjustment: if intake is low for the time of day, remind sooner (max 50% sooner)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const hoursPassed = (now.getTime() - today.getTime()) / (1000 * 60 * 60);
+
+    const goal = (user.goals?.targetWaterLiters || 2) * 1000;
+    const expectedIntake = (goal / 16) * hoursPassed; // assume 16 wake hours
+
+    if (user.hydration.currentIntake < expectedIntake * 0.7) {
+        // Way behind: remind 30% sooner
+        return new Date(now.getTime() + (interval * 0.7) * 60 * 1000);
+    }
+
+    return nextTime;
+}
+
 // API Endpoint: Log Water Intake
 app.post('/api/user/water', authMiddleware, async (req, res) => {
     try {
@@ -191,6 +217,9 @@ app.post('/api/user/water', authMiddleware, async (req, res) => {
             user.hydration.currentIntake += (amount || user.hydration.incrementAmount);
         }
 
+        // Update Next Reminder Time (Delay it because user just drank)
+        user.hydration.nextReminderTime = calculateNextReminder(user);
+
         await user.save();
         res.json({
             currentIntake: user.hydration.currentIntake,
@@ -215,6 +244,9 @@ app.put('/api/user/hydration-settings', authMiddleware, async (req, res) => {
         if (remindersEnabled !== undefined) user.hydration.remindersEnabled = remindersEnabled;
         if (reminderInterval !== undefined) user.hydration.reminderInterval = reminderInterval;
         if (incrementAmount !== undefined) user.hydration.incrementAmount = incrementAmount;
+
+        // Recalculate based on new settings
+        user.hydration.nextReminderTime = calculateNextReminder(user);
 
         await user.save();
         res.json({ success: true, settings: user.hydration });

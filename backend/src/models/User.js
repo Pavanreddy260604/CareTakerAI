@@ -56,15 +56,16 @@ const UserSchema = new mongoose.Schema({
             current: { type: Number, default: 0 },
             unit: String,
             createdAt: { type: Date, default: Date.now }
-        }],
-        // Smart Hydration Settings
-        hydration: {
-            remindersEnabled: { type: Boolean, default: false },
-            reminderInterval: { type: Number, default: 60 }, // minutes
-            incrementAmount: { type: Number, default: 250 }, // ml
-            currentIntake: { type: Number, default: 0 },
-            lastReset: { type: Date, default: Date.now }
-        }
+        }]
+    },
+    // Smart Hydration Settings (Top-level for independent persistence)
+    hydration: {
+        remindersEnabled: { type: Boolean, default: false },
+        reminderInterval: { type: Number, default: 60 }, // minutes
+        incrementAmount: { type: Number, default: 250 }, // ml
+        currentIntake: { type: Number, default: 0 },
+        lastReset: { type: Date, default: Date.now },
+        nextReminderTime: { type: Date, default: null }
     },
     // PHASE 3: Personal Baseline (calculated from history)
     baseline: {
