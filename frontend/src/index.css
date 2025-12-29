@@ -60,6 +60,48 @@
     --glass-surface: 255 255 255 / 0.03;
     --glass-highlight: 255 255 255 / 0.05;
   }
+
+  .light {
+    /* BACKGROUND: Clean White */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    /* CARD: White with shadow */
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    /* PRIMARY: Teal remains, but slightly darker for contrast on white */
+    --primary: 170 70% 40%;
+    --primary-foreground: 355.7 100% 97.3%;
+
+    /* SECONDARY: Light Gray */
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    /* MUTED: Very light gray */
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 170 70% 40%;
+
+    --radius: 1.5rem;
+
+    /* Glass tokens for light mode (subtle shadows instead of white opacity) */
+    --glass-border: 0 0 0 / 0.1;
+    --glass-surface: 0 0 0 / 0.03;
+    --glass-highlight: 0 0 0 / 0.05;
+  }
 }
 
 @layer base {

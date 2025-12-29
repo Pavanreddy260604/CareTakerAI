@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import NotificationControl from './NotificationControl';
+import { useTheme } from "./ThemeProvider";
 
 interface GoalSettingsProps {
     onClose: () => void;
 }
 
 export function GoalSettings({ onClose }: GoalSettingsProps) {
+    const { theme, setTheme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const { toast } = useToast();
@@ -145,6 +147,34 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                 </div>
             ) : (
                 <div className="max-w-lg mx-auto px-4 py-6 pb-24">
+
+                    {/* SECTION: Appearance */}
+                    <div className="mb-8">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
+                            Appearance
+                        </h2>
+                        <div className="border border-white/10 bg-white/5 p-4 rounded-xl flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                                    {theme === 'dark' ? <span className="text-xl">🌙</span> : <span className="text-xl">☀️</span>}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-foreground">
+                                        {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        {theme === 'dark' ? 'Easy on the eyes' : 'Maximum visibility'}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                                className="bg-white/10 hover:bg-white/20 text-foreground px-4 py-2 rounded-lg text-xs font-bold transition-all"
+                            >
+                                TOGGLE
+                            </button>
+                        </div>
+                    </div>
 
                     {/* SECTION: Notifications */}
                     <div className="mb-8">

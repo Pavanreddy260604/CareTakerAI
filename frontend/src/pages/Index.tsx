@@ -329,11 +329,6 @@ const Index = () => {
                     <p className="text-muted-foreground font-sans">
                       {aiResponse.explanation}
                     </p>
-                    {aiResponse.metrics?.capacity && (
-                      <p className="text-xs text-primary mt-2 font-mono">
-                        Capacity: {aiResponse.metrics.capacity}% | Confidence: {Math.round((aiResponse.metrics?.confidence || 0) * 100)}%
-                      </p>
-                    )}
                   </>
                 ) : (
                   <>
