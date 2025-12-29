@@ -192,6 +192,17 @@ const Index = () => {
       return;
     }
 
+    // Validation: Ensure at least one metric is logged
+    const hasData = Object.values(healthData).some(d => d.status !== 'NOT_SET');
+    if (!hasData) {
+      toast({
+        title: "No Data Logged",
+        description: "Please record at least one health metric (e.g., Sleep, Water) before checking in.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const payload = {
@@ -219,6 +230,24 @@ const Index = () => {
       setIsLoading(false);
     }
   };
+
+  // Automatic Check-in for High Stress
+  useEffect(() => {
+    if (healthData.mental.status === 'HIGH' && !todayCheckedIn && !isLoading) {
+      toast({
+        title: "⚠️ High Stress Detected",
+        description: "Initiating immediate wellness check-in for support...",
+        variant: "destructive",
+        duration: 5000
+      });
+
+      const timer = setTimeout(() => {
+        performCheckIn();
+      }, 1500); // 1.5s delay to let user see the toast
+
+      return () => clearTimeout(timer);
+    }
+  }, [healthData.mental.status, todayCheckedIn, isLoading]);
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-1000">
@@ -384,18 +413,53 @@ const Index = () => {
           {Object.entries(TASK_CATEGORIES).map(([key, info]) => {
             const k = key as CategoryKey;
             const data = healthData[k];
+
+            // Define cycle order for each category
+            const getNextStatus = (current: StatusValue, category: CategoryKey): StatusValue => {
+              if (category === 'exercise') {
+                return current === 'NOT_SET' ? 'DONE' : current === 'DONE' ? 'PENDING' : 'NOT_SET';
+              }
+              if (category === 'mental') {
+                return current === 'NOT_SET' ? 'OK' : current === 'OK' ? 'HIGH' : current === 'HIGH' ? 'LOW' : 'NOT_SET';
+              }
+              // Default (Water, Food, Sleep)
+              return current === 'NOT_SET' ? 'OK' : current === 'OK' ? 'LOW' : 'NOT_SET';
+            };
+
+            const handleCardClick = () => {
+              const next = getNextStatus(data.status, k);
+              if (next === 'NOT_SET') {
+                // Reset
+                setHealthData(prev => ({
+                  ...prev,
+                  [k]: { ...prev[k], status: 'NOT_SET', logged: false, value: "" }
+                }));
+              } else {
+                handleLog(k, next);
+              }
+            };
+
+            // Dynamic styling based on status
+            const getStatusColor = () => {
+              if (!data.logged) return 'hover:border-primary/30';
+              if (data.status === 'HIGH' || data.status === 'LOW' || data.status === 'PENDING') return 'bg-red-500/10 border-red-500/50';
+              return 'bg-primary/5 border-primary/20';
+            };
+
             return (
               <div key={key}
-                className={`bento-card p-4 hover:border-primary/30 group cursor-pointer ${data.logged ? 'bg-primary/5 border-primary/20' : ''}`}
-                onClick={() => handleLog(k, 'OK')}>
+                className={`bento-card p-4 group cursor-pointer transition-all duration-300 ${getStatusColor()}`}
+                onClick={handleCardClick}>
                 <div className="flex justify-between items-start">
                   <span className="text-2xl group-hover:scale-110 transition-transform duration-300">{info.icon}</span>
-                  {data.logged && <span className="text-primary text-xs font-bold">✓</span>}
+                  {data.logged && <span className={`text-xs font-bold ${data.status === 'HIGH' || data.status === 'LOW' ? 'text-red-400' : 'text-primary'}`}>
+                    {data.status}
+                  </span>}
                 </div>
                 <div className="mt-4">
                   <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{info.label}</h3>
-                  <p className="text-lg font-display font-semibold group-hover:text-primary transition-colors">
-                    {data.logged ? "Recorded" : "Log Now"}
+                  <p className={`text-lg font-display font-semibold transition-colors ${data.logged ? 'text-foreground' : 'group-hover:text-primary'}`}>
+                    {data.logged ? (data.status === 'HIGH' ? 'High Stress' : data.status === 'LOW' ? 'Deficit' : data.status === 'PENDING' ? 'Skipped' : 'Good') : "Log Now"}
                   </p>
                 </div>
               </div>

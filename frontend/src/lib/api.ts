@@ -1,7 +1,23 @@
+import { Capacitor } from '@capacitor/core';
+
 // API Configuration - Uses env var for production, defaults to localhost for dev
 const getBaseUrl = () => {
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-    // If running on a network IP (mobile testing), use that IP instead of localhost
+
+    // Mobile Handling
+    if (Capacitor.isNativePlatform()) {
+        const platform = Capacitor.getPlatform();
+        // Android Emulator default loopback
+        if (platform === 'android') {
+            return 'http://10.0.2.2:3000/api';
+        }
+        // iOS Simulator default loopback
+        if (platform === 'ios') {
+            return 'http://localhost:3000/api';
+        }
+    }
+
+    // Web Handling (including mobile web / PWA)
     const hostname = window.location.hostname;
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
         return 'http://localhost:3000/api';
