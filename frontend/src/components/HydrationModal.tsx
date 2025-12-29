@@ -61,16 +61,15 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
     };
 
     // SVG circle calculations for responsive sizing
-    const circleSize = 200; // viewBox size
+    const circleSize = 200;
     const strokeWidth = 10;
     const radius = (circleSize - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
 
     return (
         <div className="fixed inset-0 z-50 bg-background overflow-auto">
-            {/* Safe area padding for mobile notches */}
             <div className="min-h-screen pb-safe">
-                {/* App-Style Header - Mobile optimized */}
+                {/* Mobile Header */}
                 <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-border/10">
                     <div className="px-4 py-3 flex items-center justify-between">
                         <button
@@ -80,12 +79,12 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                             Close
                         </button>
                         <div className="flex items-center gap-2">
-                            <Droplets className="w-5 h-5 text-cyan-500" />
+                            <Droplets className="w-5 h-5 text-primary" />
                             <h1 className="text-base font-display font-semibold text-foreground">Hydration</h1>
                         </div>
                         <button
                             onClick={() => setShowSettings(!showSettings)}
-                            className={`text-sm font-medium py-2 px-1 -mr-1 active:opacity-60 ${showSettings ? 'text-cyan-500' : 'text-muted-foreground'}`}
+                            className={`text-sm font-medium py-2 px-1 -mr-1 active:opacity-60 ${showSettings ? 'text-primary' : 'text-muted-foreground'}`}
                         >
                             Settings
                         </button>
@@ -93,9 +92,9 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                 </div>
 
                 <div className="px-4 py-6">
-                    {/* Hero Progress Section - Responsive circle */}
+                    {/* Hero Progress Section */}
                     <div className="flex flex-col items-center text-center mb-8">
-                        {/* Responsive Progress Circle using viewBox */}
+                        {/* Responsive Progress Circle */}
                         <div className="relative w-full max-w-[220px] aspect-square flex items-center justify-center mb-4">
                             <svg viewBox={`0 0 ${circleSize} ${circleSize}`} className="w-full h-full transform -rotate-90">
                                 <circle
@@ -117,7 +116,7 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                                     strokeDasharray={circumference}
                                     strokeDashoffset={circumference - (progress / 100) * circumference}
                                     strokeLinecap="round"
-                                    className={`transition-all duration-1000 ease-out ${isGoalMet ? 'text-primary' : 'text-cyan-500'}`}
+                                    className="text-primary transition-all duration-1000 ease-out"
                                 />
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -137,13 +136,13 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
 
                         {!isGoalMet && (
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <Droplets className="w-4 h-4 text-cyan-500" />
+                                <Droplets className="w-4 h-4 text-primary" />
                                 <span className="text-sm">{remaining}ml remaining</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Quick Log Section - Touch optimized */}
+                    {/* Quick Log Section */}
                     <div className="mb-6">
                         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
                             Quick Log
@@ -154,10 +153,10 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                                     key={amt}
                                     onClick={() => onLog(amt)}
                                     disabled={isGoalMet}
-                                    className="flex flex-col items-center gap-1.5 py-4 px-2 rounded-xl bg-card border border-border/50 active:bg-cyan-500/10 active:border-cyan-500/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                    className="flex flex-col items-center gap-1.5 py-4 px-2 rounded-xl bg-card border border-border/50 active:bg-primary/10 active:border-primary/30 transition-all disabled:opacity-40 disabled:pointer-events-none"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center">
-                                        <Plus className="w-4 h-4 text-cyan-500" />
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <Plus className="w-4 h-4 text-primary" />
                                     </div>
                                     <span className="text-sm font-bold text-foreground">{amt}ml</span>
                                 </button>
@@ -167,22 +166,22 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                         <button
                             onClick={() => onLog(localIncrement)}
                             disabled={isGoalMet}
-                            className="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/20 active:opacity-90 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+                            className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 active:opacity-90 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
                         >
                             <Droplets className="w-5 h-5" />
                             {isGoalMet ? 'Goal Complete ✓' : `Log ${localIncrement}ml`}
                         </button>
                     </div>
 
-                    {/* Settings Section - Collapsible */}
+                    {/* Settings Section */}
                     <div className="border border-border/50 rounded-xl overflow-hidden bg-card">
                         <button
                             onClick={() => setShowSettings(!showSettings)}
                             className="w-full px-4 py-3 flex items-center justify-between active:bg-muted/10"
                         >
                             <div className="flex items-center gap-3">
-                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${localReminders ? 'bg-cyan-500/10' : 'bg-muted/20'}`}>
-                                    {localReminders ? <Bell className="w-4 h-4 text-cyan-500" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${localReminders ? 'bg-primary/10' : 'bg-muted/20'}`}>
+                                    {localReminders ? <Bell className="w-4 h-4 text-primary" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
                                 </div>
                                 <div className="text-left">
                                     <p className="text-sm font-medium text-foreground">Smart Reminders</p>
@@ -199,7 +198,7 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                                     <span className="text-sm font-medium text-foreground">Enable Reminders</span>
                                     <button
                                         onClick={() => setLocalReminders(!localReminders)}
-                                        className={`w-11 h-6 rounded-full transition-colors relative ${localReminders ? 'bg-cyan-500' : 'bg-muted'}`}
+                                        className={`w-11 h-6 rounded-full transition-colors relative ${localReminders ? 'bg-primary' : 'bg-muted'}`}
                                     >
                                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow ${localReminders ? 'right-1' : 'left-1'}`} />
                                     </button>
@@ -210,7 +209,7 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                                     <div>
                                         <div className="flex justify-between mb-2">
                                             <span className="text-sm text-muted-foreground">Remind every</span>
-                                            <span className="text-sm font-bold text-cyan-500">{localInterval} min</span>
+                                            <span className="text-sm font-bold text-primary">{localInterval} min</span>
                                         </div>
                                         <input
                                             type="range"
@@ -219,7 +218,7 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                                             step="15"
                                             value={localInterval}
                                             onChange={(e) => setLocalInterval(Number(e.target.value))}
-                                            className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-cyan-500"
+                                            className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
                                         />
                                     </div>
                                 )}
@@ -232,7 +231,7 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
                                             <button
                                                 key={amt}
                                                 onClick={() => setLocalIncrement(amt)}
-                                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold border transition-all ${localIncrement === amt ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-600' : 'border-border/30 text-muted-foreground active:bg-muted/50'}`}
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold border transition-all ${localIncrement === amt ? 'bg-primary/10 border-primary/50 text-primary' : 'border-border/30 text-muted-foreground active:bg-muted/50'}`}
                                             >
                                                 {amt}ml
                                             </button>
@@ -242,7 +241,7 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
 
                                 <button
                                     onClick={handleSaveSettings}
-                                    className="w-full py-3 rounded-lg bg-cyan-500 text-white font-bold text-sm active:bg-cyan-600"
+                                    className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold text-sm active:opacity-90"
                                 >
                                     Save Settings
                                 </button>
@@ -252,9 +251,9 @@ const HydrationModal: React.FC<HydrationModalProps> = ({
 
                     {/* Motivation Tip */}
                     {!isGoalMet && (
-                        <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-cyan-500/5 to-blue-500/5 border border-cyan-500/10">
+                        <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/50">
                             <div className="flex items-start gap-3">
-                                <Sparkles className="w-5 h-5 text-cyan-500 shrink-0 mt-0.5" />
+                                <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                                 <p className="text-xs text-muted-foreground leading-relaxed">
                                     <span className="font-medium text-foreground">Stay hydrated!</span> Drinking water improves focus and energy.
                                 </p>
