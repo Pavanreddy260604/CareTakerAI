@@ -19,8 +19,8 @@ import { VoiceLogger } from "@/components/VoiceLogger";
 
 // Integrated Feature Components
 import { BiologicalStatus } from "@/components/BiologicalStatus";
-import CurrentAction from "@/components/CurrentAction";
-import NotificationControl from "@/components/NotificationControl";
+
+import { ActionRequiredModal } from "@/components/ActionRequiredModal";
 import ConsistencyState from "@/components/ConsistencyState";
 
 // Task categories mapped to new design
@@ -258,10 +258,22 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-1000">
       {/* Recovery Lock Overlay */}
+      {/* Recovery Lock Overlay */}
       <RecoveryLock
         isVisible={showRecoveryLock}
         capacity={bioMetrics?.capacity || 40}
+        metrics={bioMetrics}
         onAcknowledge={() => setShowRecoveryLock(false)}
+      />
+
+      {/* Action Required Modal (Full Screen) */}
+      <ActionRequiredModal
+        action={bioMetrics?.requiredAction || null}
+        status={bioMetrics?.requiredAction === "Continue Observation" ? "COMPLETED" : "PENDING"}
+        onConfirm={() => {
+          // Confirmation logic could be added here or just close for now
+          toast({ title: "Action Completed", description: "System updated." });
+        }}
       />
 
       {/* Full-Screen Modals */}
@@ -294,10 +306,7 @@ const Index = () => {
         {/* BENTO GRID LAYOUT */}
         <div className="bento-grid">
 
-          {/* Notification Permission Control (Auto-hides if granted) */}
-          <div className="col-span-2 md:col-span-4">
-            <NotificationControl />
-          </div>
+
 
           {/* 1. MAIN FOCUS CARD (Large) */}
           <div className="col-span-2 md:col-span-2 row-span-2 bento-card p-6 bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
@@ -355,12 +364,6 @@ const Index = () => {
           {bioMetrics && (
             <div className="col-span-2 md:col-span-4">
               <BiologicalStatus metrics={bioMetrics} />
-              {/* Current Required Action */}
-              <CurrentAction
-                action={bioMetrics.requiredAction}
-                status={bioMetrics.requiredAction === "Continue Observation" ? "COMPLETED" : "PENDING"}
-                onConfirm={() => { }}
-              />
             </div>
           )}
 

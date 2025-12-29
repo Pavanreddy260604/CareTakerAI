@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import NotificationControl from './NotificationControl';
 
 interface GoalSettingsProps {
     onClose: () => void;
@@ -118,6 +119,7 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
         }
     };
 
+    // End of GoalSettings component logic before return
     const handleLogout = () => {
         localStorage.removeItem('authToken');
         localStorage.removeItem('focus_stats');
@@ -130,16 +132,10 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
             <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-white/10">
                 <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
                     <button onClick={onClose} className="text-primary font-medium text-sm">
-                        Cancel
+                        Close
                     </button>
                     <h1 className="text-lg font-display font-semibold text-white">Settings</h1>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="text-primary font-semibold text-sm disabled:opacity-50"
-                    >
-                        {saving ? 'Saving...' : 'Save'}
-                    </button>
+                    <div className="w-10"></div> {/* Spacer for center alignment */}
                 </div>
             </div>
 
@@ -149,6 +145,14 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                 </div>
             ) : (
                 <div className="max-w-lg mx-auto px-4 py-6 pb-24">
+
+                    {/* SECTION: Notifications */}
+                    <div className="mb-8">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
+                            Notifications
+                        </h2>
+                        <NotificationControl />
+                    </div>
 
                     {/* SECTION: Current Status (from AI) */}
                     {currentMetrics && (

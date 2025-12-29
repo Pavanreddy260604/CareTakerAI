@@ -54,7 +54,7 @@ export const BiologicalStatus: React.FC<Props> = ({ metrics }) => {
                     </span>
                     <div className="text-3xl sm:text-4xl font-mono font-bold text-white mt-2">
                         {recoveryBudget}H
-                        <span className="text-xs sm:text-sm text-muted-foreground block">BUDGET</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground block">RECOVERY TIME</span>
                     </div>
                 </div>
             )}
