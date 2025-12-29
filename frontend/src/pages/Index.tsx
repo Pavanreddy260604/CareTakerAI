@@ -17,6 +17,12 @@ import DataExport from "@/components/DataExport";
 import RecoveryMode from "@/components/RecoveryMode";
 import { VoiceLogger } from "@/components/VoiceLogger";
 
+// Integrated Feature Components
+import { BiologicalStatus } from "@/components/BiologicalStatus";
+import CurrentAction from "@/components/CurrentAction";
+import NotificationControl from "@/components/NotificationControl";
+import ConsistencyState from "@/components/ConsistencyState";
+
 // Task categories mapped to new design
 const TASK_CATEGORIES = {
   water: { label: "Hydration", icon: "💧", question: "Water intake?", unit: "Liters" },
@@ -288,6 +294,11 @@ const Index = () => {
         {/* BENTO GRID LAYOUT */}
         <div className="bento-grid">
 
+          {/* Notification Permission Control (Auto-hides if granted) */}
+          <div className="col-span-2 md:col-span-4">
+            <NotificationControl />
+          </div>
+
           {/* 1. MAIN FOCUS CARD (Large) */}
           <div className="col-span-2 md:col-span-2 row-span-2 bento-card p-6 bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
             <div className="flex flex-col h-full justify-between">
@@ -339,6 +350,19 @@ const Index = () => {
               </div>
             </div>
           </div>
+
+          {/* Detailed Biological Status */}
+          {bioMetrics && (
+            <div className="col-span-2 md:col-span-4">
+              <BiologicalStatus metrics={bioMetrics} />
+              {/* Current Required Action */}
+              <CurrentAction
+                action={bioMetrics.requiredAction}
+                status={bioMetrics.requiredAction === "Continue Observation" ? "COMPLETED" : "PENDING"}
+                onConfirm={() => { }}
+              />
+            </div>
+          )}
 
           {/* 2. FEATURE ACCESS CARDS */}
           {/* Analytics */}
@@ -427,6 +451,8 @@ const Index = () => {
             };
 
             const handleCardClick = () => {
+              if (todayCheckedIn) return; // Lock after check-in
+
               const next = getNextStatus(data.status, k);
               if (next === 'NOT_SET') {
                 // Reset
@@ -495,6 +521,10 @@ const Index = () => {
             </div>
           )}
 
+          {/* Footer Status */}
+          <div className="col-span-2 md:col-span-4 mt-8">
+            <ConsistencyState />
+          </div>
         </div>
       </div>
     </div>
