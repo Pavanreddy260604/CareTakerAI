@@ -428,7 +428,12 @@ const Index = () => {
         currentIntake={waterIntake}
         goal={waterGoal}
         incrementAmount={hydrationSettings.incrementAmount}
-        onLog={(amount) => handleLog('water', amount.toString() as any)}
+        remindersEnabled={hydrationSettings.remindersEnabled}
+        reminderInterval={hydrationSettings.reminderInterval}
+        onLog={(amount) => handleLog('water', amount)}
+        onSettingsChange={(settings) => {
+          setHydrationSettings(prev => ({ ...prev, ...settings }));
+        }}
       />
 
       <MentalLoadModal
