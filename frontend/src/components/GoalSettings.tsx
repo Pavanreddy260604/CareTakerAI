@@ -22,9 +22,10 @@ import {
 
 interface GoalSettingsProps {
     onClose: () => void;
+    onGoalChange?: (goals: { targetWaterLiters: number }) => void;
 }
 
-export function GoalSettings({ onClose }: GoalSettingsProps) {
+export function GoalSettings({ onClose, onGoalChange }: GoalSettingsProps) {
     const { theme, setTheme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -126,6 +127,12 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                 title: '✅ Settings Saved',
                 description: 'Your preferences have been updated.'
             });
+
+            // Notify parent of goal change
+            if (onGoalChange) {
+                onGoalChange({ targetWaterLiters });
+            }
+
             onClose();
         } catch (e) {
             console.error('Failed to save:', e);

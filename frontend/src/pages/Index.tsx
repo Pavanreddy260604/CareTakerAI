@@ -419,7 +419,7 @@ const Index = () => {
       {showAnalytics && <AnalyticsDashboard onClose={() => setShowAnalytics(false)} />}
       {showFocusTimer && <FocusTimer onClose={() => setShowFocusTimer(false)} capacity={bioMetrics?.capacity || 100} />}
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
-      {showGoals && <GoalSettings onClose={() => setShowGoals(false)} />}
+      {showGoals && <GoalSettings onClose={() => setShowGoals(false)} onGoalChange={(goals) => setWaterGoal(goals.targetWaterLiters * 1000)} />}
       {showDataExport && <DataExport onClose={() => setShowDataExport(false)} />}
 
       <HydrationModal
