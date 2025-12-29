@@ -124,6 +124,10 @@ router.post('/google', async (req, res) => {
         });
         const { name, email, sub } = ticket.getPayload();
 
+        if (!email) {
+            return res.status(400).json({ msg: 'Google account missing email' });
+        }
+
         let user = await User.findOne({ email: email.toLowerCase() });
 
         if (user) {

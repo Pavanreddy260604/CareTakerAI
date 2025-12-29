@@ -54,7 +54,9 @@ const Index = () => {
   const [userName, setUserName] = useState("");
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [operatingMode, setOperatingMode] = useState<'CARETAKER' | 'OBSERVER'>('CARETAKER');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [aiResponse, setAiResponse] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [bioMetrics, setBioMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showRecoveryLock, setShowRecoveryLock] = useState(false);

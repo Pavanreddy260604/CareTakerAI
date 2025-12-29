@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -26,16 +26,18 @@ const Login = () => {
         }
     }, []);
 
-    const handleGoogleResponse = async (response: any) => {
+    const handleGoogleResponse = useCallback(async (response: any) => {
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await api.googleLogin(response.credential);
             setSessionExpired(false);
             toast({ title: "SYSTEM ACCESS GRANTED", description: "Google Authentication Verified." });
             navigate("/");
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             toast({ title: "ACCESS DENIED", description: error.message, variant: "destructive" });
         }
-    };
+    }, [navigate, toast]);
 
     useEffect(() => {
         const script = document.createElement('script');
@@ -65,7 +67,7 @@ const Login = () => {
                 document.body.removeChild(script);
             }
         }
-    }, []);
+    }, [handleGoogleResponse]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

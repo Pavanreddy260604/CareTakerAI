@@ -38,6 +38,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'trends' | 'weekly' | 'insights'>('trends');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [weeklyInsights, setWeeklyInsights] = useState<any>(null);
     const [insightsLoading, setInsightsLoading] = useState(false);
     const [aiTrendAnalysis, setAiTrendAnalysis] = useState<{
@@ -57,6 +58,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                 if (trendAnalysis?.hasEnoughData) {
                     setAiTrendAnalysis(trendAnalysis);
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (e: any) {
                 console.error('Analytics fetch error:', e);
                 setError(e.message || 'Failed to load analytics');
@@ -291,6 +293,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                         </div>
                                         {weeklyInsights.recommendations && weeklyInsights.recommendations.length > 0 ? (
                                             <div className="grid md:grid-cols-2 gap-4">
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                 {weeklyInsights.recommendations.map((rec: any, idx: number) => (
                                                     <div key={idx} className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                                                         <p className="font-bold text-primary mb-1">{rec.action}</p>
@@ -311,6 +314,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                             <div className="mt-6 pt-6 border-t border-white/10">
                                                 <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Patterns Found</h4>
                                                 <div className="space-y-2">
+                                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                     {weeklyInsights.correlations.map((c: any, idx: number) => (
                                                         <div key={idx} className="p-3 rounded-xl bg-white/5 text-sm">
                                                             {c.message}
