@@ -62,11 +62,10 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [goalsData, baselineData, statsData, suggestionsData] = await Promise.all([
+                const [goalsData, baselineData, statsData] = await Promise.all([
                     api.getGoals(),
                     api.getBaseline(),
-                    api.getUserStats(),
-                    api.getAIGoalSuggestions().catch(() => null)
+                    api.getUserStats()
                 ]);
 
                 setTargetSleepHours(goalsData.targetSleepHours || 7);
@@ -77,11 +76,6 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                 // Get current metrics from latest stats
                 if (statsData.metrics) {
                     setCurrentMetrics(statsData.metrics);
-                }
-
-                // Get AI suggestions
-                if (suggestionsData?.hasEnoughData) {
-                    setAiSuggestions(suggestionsData);
                 }
             } catch (e) {
                 console.error('Failed to load settings:', e);
@@ -243,35 +237,52 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                     )}
 
                     {/* SECTION: AI Suggestions */}
-                    {aiSuggestions?.suggestions && (
-                        <div className="mb-8">
-                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2 flex items-center gap-2">
-                                <Sparkles className="w-3 h-3 text-primary" /> AI Goal Suggestions
-                            </h2>
+                    <div className="mb-8">
+                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2 flex items-center gap-2">
+                            <Sparkles className="w-3 h-3 text-primary" /> AI Goal Suggestions
+                        </h2>
+
+                        {!aiSuggestions ? (
+                            <button
+                                onClick={async () => {
+                                    setLoading(true);
+                                    try {
+                                        const data = await api.getAIGoalSuggestions();
+                                        if (data?.hasEnoughData) setAiSuggestions(data);
+                                        else toast({ title: "Not enough data", description: "Need more check-ins first." });
+                                    } catch (e) { toast({ title: "Error", description: "Could not get suggestions", variant: "destructive" }); }
+                                    setLoading(false);
+                                }}
+                                className="w-full py-4 border border-dashed border-border rounded-xl flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-muted/10 hover:text-primary transition-colors"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                Get Personalized Suggestions
+                            </button>
+                        ) : (
                             <div className="bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20 rounded-2xl p-4 shadow-sm">
                                 <p className="text-sm text-foreground/80 mb-4">
-                                    {aiSuggestions.suggestions.explanation}
+                                    {aiSuggestions.suggestions?.explanation}
                                 </p>
                                 <div className="grid grid-cols-3 gap-3 mb-4">
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions.targetSleepHours}h</p>
+                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions?.targetSleepHours}h</p>
                                         <p className="text-[10px] text-muted-foreground">Sleep</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions.targetWaterLiters}L</p>
+                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions?.targetWaterLiters}L</p>
                                         <p className="text-[10px] text-muted-foreground">Water</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions.targetExerciseDays}</p>
+                                        <p className="text-2xl font-bold text-cyan-500">{aiSuggestions.suggestions?.targetExerciseDays}</p>
                                         <p className="text-[10px] text-muted-foreground">Exercise Days</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => {
                                         if (aiSuggestions.suggestions) {
-                                            setTargetSleepHours(aiSuggestions.suggestions.targetSleepHours);
-                                            setTargetWaterLiters(aiSuggestions.suggestions.targetWaterLiters);
-                                            setTargetExerciseDays(aiSuggestions.suggestions.targetExerciseDays);
+                                            setTargetSleepHours(aiSuggestions.suggestions?.targetSleepHours);
+                                            setTargetWaterLiters(aiSuggestions.suggestions?.targetWaterLiters);
+                                            setTargetExerciseDays(aiSuggestions.suggestions?.targetExerciseDays);
                                             toast({ title: '✨ AI Suggestions Applied', description: 'Save to confirm these goals.' });
                                         }
                                     }}
@@ -280,14 +291,23 @@ export function GoalSettings({ onClose }: GoalSettingsProps) {
                                     Apply AI Suggestions
                                 </button>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {/* SECTION: Health Goals */}
                     <div className="mb-8">
-                        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 mb-2">
-                            Health Goals
-                        </h2>
+                        <div className="flex items-center justify-between px-4 mb-2">
+                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                Health Goals
+                            </h2>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="text-xs font-bold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                            >
+                                {saving ? "Saving..." : "Save Goals"}
+                            </button>
+                        </div>
                         <div className="bg-card border border-border/50 rounded-2xl overflow-hidden divide-y divide-border/10 shadow-sm">
                             {/* Sleep */}
                             <div className="px-4 py-4">

@@ -158,7 +158,7 @@ async function recallSimilarState(userId, currentState) {
         console.log("Supermemory Search: No matching memories found");
         return [];
     } catch (error) {
-        console.error("Supermemory Recall Error:", error.message);
+        console.warn("⚠️ Supermemory Recall Error:", error.message);
         return [];
     }
 }

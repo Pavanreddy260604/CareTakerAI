@@ -1,8 +1,25 @@
+import { useState, useEffect } from "react";
 import { useNotifications } from "@/hooks/use-notifications";
 import { Bell, BellOff, AlertTriangle, AlertCircle, Info } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const NotificationControl = () => {
   const { supported, permission, requestPermission } = useNotifications();
+  const [isEnabled, setIsEnabled] = useState(true);
+
+  // Load preference from local storage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("notifications_enabled");
+    if (stored !== null) {
+      setIsEnabled(stored === "true");
+    }
+  }, []);
+
+  const toggleNotifications = () => {
+    const newState = !isEnabled;
+    setIsEnabled(newState);
+    localStorage.setItem("notifications_enabled", String(newState));
+  };
 
   // If notifications are not supported
   if (!supported) {
@@ -30,23 +47,28 @@ const NotificationControl = () => {
     return (
       <div className="border border-primary/20 bg-primary/5 p-4 mb-5 rounded-xl flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-            <Bell className="w-5 h-5 text-primary" />
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isEnabled ? 'bg-primary/20' : 'bg-muted/20'}`}>
+            <Bell className={`w-5 h-5 ${isEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
           </div>
           <div>
-            <p className="text-sm text-primary font-mono font-bold">
-              ALERTS ACTIVE
+            <p className={`text-sm font-mono font-bold ${isEnabled ? 'text-primary' : 'text-muted-foreground'}`}>
+              {isEnabled ? 'ALERTS ACTIVE' : 'ALERTS PAUSED'}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Receiving critical updates
+              {isEnabled ? 'Receiving critical updates' : 'Notifications muted'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-primary">ON</span>
-          <div className="w-10 h-6 bg-primary rounded-full relative cursor-default opacity-100">
-            <div className="absolute right-1 top-1 w-4 h-4 bg-primary-foreground rounded-full shadow-sm" />
-          </div>
+          <span className={`text-xs font-bold ${isEnabled ? 'text-primary' : 'text-muted-foreground'}`}>
+            {isEnabled ? 'ON' : 'OFF'}
+          </span>
+          <button
+            onClick={toggleNotifications}
+            className={`w-10 h-6 rounded-full relative transition-colors duration-200 ${isEnabled ? 'bg-primary' : 'bg-muted'}`}
+          >
+            <div className={`absolute top-1 w-4 h-4 bg-background rounded-full shadow-sm transition-all duration-200 ${isEnabled ? 'right-1' : 'left-1'}`} />
+          </button>
         </div>
       </div>
     );

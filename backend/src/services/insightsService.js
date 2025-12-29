@@ -14,11 +14,34 @@ if (process.env.GEMINI_API_KEY) {
     geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 }
 
+// Basic In-Memory Cache to prevent AI Rate Limiting
+const summaryCache = new Map();
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 Hours (Daily Strategy)
+
+/**
+ * Invalidate cache for a user (called after new check-in)
+ */
+function invalidateCache(userId) {
+    if (summaryCache.has(userId)) {
+        console.log(`Checking-in: Invalidating insights cache for user ${userId}`);
+        summaryCache.delete(userId);
+    }
+}
+
 /**
  * Generate weekly summary with insights + Supermemory deep analysis
  */
 async function generateWeeklySummary(userId) {
     try {
+        // Check Cache
+        if (summaryCache.has(userId)) {
+            const { timestamp, data } = summaryCache.get(userId);
+            if (Date.now() - timestamp < CACHE_TTL) {
+                console.log(`Using cached weekly summary for user ${userId} (Age: ${Math.round((Date.now() - timestamp) / 60000)}m)`);
+                return data;
+            }
+        }
+
         // Get last 7 days of logs
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -106,6 +129,12 @@ async function generateWeeklySummary(userId) {
             memoryInsights: memoryInsights,
             aiPowered: !!aiRecommendations
         };
+
+        // Cache the result to save API calls
+        summaryCache.set(userId, {
+            timestamp: Date.now(),
+            data: summary
+        });
 
         return summary;
     } catch (error) {
@@ -600,5 +629,6 @@ module.exports = {
     getMonthlyTrends,
     calculateOverview,
     findCorrelations,
-    detectPatterns
+    detectPatterns,
+    invalidateCache
 };

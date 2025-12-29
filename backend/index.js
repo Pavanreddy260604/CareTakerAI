@@ -23,7 +23,7 @@ const { addMemory, queryMemory, storeWeeklyReflection } = require('./src/service
 const { getEngagementData } = require('./src/services/engagementService');
 const { getFullAnalytics } = require('./src/services/analyticsService');
 const { getBaseline, compareToBaseline, getUserGoals, updateUserGoals, calculateBaseline } = require('./src/services/baselineService');
-const { generateWeeklySummary, getMonthlyTrends } = require('./src/services/insightsService');
+const { generateWeeklySummary, invalidateCache } = require('./src/services/insightsService');
 const { getSmartReminder, getUserAchievements, getTimeOfDayContext, calculateStreakStatus, generateAIGoalSuggestions, generateAITrendAnalysis } = require('./src/services/reminderService');
 
 // Middleware
@@ -204,6 +204,9 @@ app.post('/api/check-in', authMiddleware, async (req, res) => {
             { upsert: true, new: true }
         );
 
+        // Invalidate cached insights so next view reflects new data
+        invalidateCache(userId);
+
         res.json(aiResult);
 
     } catch (error) {
@@ -297,168 +300,14 @@ app.get('/api/analytics', authMiddleware, async (req, res) => {
 });
 
 // API Endpoint: Parse Voice Text using AI (PROTECTED)
-app.post('/api/parse-voice', authMiddleware, async (req, res) => {
-    try {
-        const { text } = req.body;
-
-        if (!text || typeof text !== 'string') {
-            return res.status(400).json({ error: 'Text is required' });
-        }
-
-        // Use Gemini if available
-        const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(500).json({ error: 'AI not configured' });
-        }
-
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-        const prompt = `You are a health data extraction assistant. Parse the following natural language text and extract health status information.
-
-User said: "${text}"
-
-Extract the following fields if mentioned (use EXACTLY these values):
-- water: "LOW" (dehydrated, little/no water) or "OK" (hydrated, drank water)
-- food: "LOW" (skipped meals, hungry) or "OK" (ate properly)  
-- sleep: "LOW" (bad sleep, less than 6 hours, tired) or "OK" (slept well, 7+ hours)
-- exercise: "PENDING" (no exercise, skipped) or "DONE" (exercised, worked out)
-- mentalLoad: "LOW" (calm, relaxed), "OK" (moderate stress), or "HIGH" (stressed, anxious, overwhelmed)
-
-Respond ONLY with a JSON object containing only the fields that were clearly mentioned. Example:
-{"water": "OK", "sleep": "LOW"}
-
-If nothing health-related was mentioned, respond with: {}`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const responseText = response.text().trim();
-
-        // Parse JSON from response
-        let healthData = {};
-        try {
-            // Extract JSON from response (might have markdown code blocks)
-            const jsonMatch = responseText.match(/\{[^}]*\}/);
-            if (jsonMatch) {
-                healthData = JSON.parse(jsonMatch[0]);
-            }
-        } catch (parseError) {
-            console.error('Failed to parse AI response:', responseText);
-        }
-
-        res.json({
-            success: true,
-            health: healthData,
-            parsed: Object.keys(healthData).length > 0
-        });
-    } catch (error) {
-        console.error('Voice Parse Error:', error);
-        res.status(500).json({ error: 'Failed to parse voice text' });
-    }
-});
+// MOVED: Use /api/ai/parse-voice instead (uses aiService.js)
 
 // API Endpoint: Save Focus Session (PROTECTED)
-app.post('/api/focus-session', authMiddleware, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { duration } = req.body;
-
-        if (!duration || typeof duration !== 'number' || duration < 60) {
-            return res.status(400).json({ error: 'Valid duration required (min 60 seconds)' });
-        }
-
-        // Get today's log
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        let todayLog = await HealthLog.findOne({
-            userId,
-            date: { $gte: today }
-        });
-
-        if (!todayLog) {
-            // Create a new log for today if doesn't exist
-            todayLog = new HealthLog({
-                userId,
-                date: new Date(),
-                health: {},
-                focusSessions: []
-            });
-        }
-
-        // Add focus session
-        if (!todayLog.focusSessions) {
-            todayLog.focusSessions = [];
-        }
-
-        todayLog.focusSessions.push({
-            duration,
-            completedAt: new Date()
-        });
-
-        // Calculate total focus time for today
-        const totalFocusMinutes = todayLog.focusSessions.reduce((sum, s) => sum + (s.duration / 60), 0);
-
-        await todayLog.save();
-
-        res.json({
-            success: true,
-            message: 'Focus session saved',
-            todayStats: {
-                sessions: todayLog.focusSessions.length,
-                totalMinutes: Math.round(totalFocusMinutes)
-            }
-        });
-    } catch (error) {
-        console.error('Focus Session Error:', error);
-        res.status(500).json({ error: 'Failed to save focus session' });
-    }
-});
+// MOVED: Use /api/focus instead (uses FocusSession model)
 
 // API Endpoint: Get Focus Stats (PROTECTED)
-app.get('/api/focus-stats', authMiddleware, async (req, res) => {
-    try {
-        const userId = req.user.id;
+// MOVED: Use /api/focus/stats instead
 
-        // Get last 7 days of focus sessions
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        weekAgo.setHours(0, 0, 0, 0);
-
-        const logs = await HealthLog.find({
-            userId,
-            date: { $gte: weekAgo },
-            focusSessions: { $exists: true, $ne: [] }
-        }).sort({ date: -1 });
-
-        const weeklyStats = {
-            totalSessions: 0,
-            totalMinutes: 0,
-            dailyBreakdown: []
-        };
-
-        logs.forEach(log => {
-            if (log.focusSessions && log.focusSessions.length > 0) {
-                const dayMinutes = log.focusSessions.reduce((sum, s) => sum + (s.duration / 60), 0);
-                weeklyStats.totalSessions += log.focusSessions.length;
-                weeklyStats.totalMinutes += dayMinutes;
-                weeklyStats.dailyBreakdown.push({
-                    date: log.date,
-                    sessions: log.focusSessions.length,
-                    minutes: Math.round(dayMinutes)
-                });
-            }
-        });
-
-        weeklyStats.totalMinutes = Math.round(weeklyStats.totalMinutes);
-
-        res.json(weeklyStats);
-    } catch (error) {
-        console.error('Focus Stats Error:', error);
-        res.status(500).json({ error: 'Failed to get focus stats' });
-    }
-});
 
 // ============================================
 // PHASE 2: USER FEEDBACK SYSTEM

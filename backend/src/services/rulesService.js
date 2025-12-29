@@ -24,7 +24,7 @@ function isRecoveryRequired(health, recoveryState, history = []) {
     if (recoveryState) return true; // Already in recovery
 
     // Immediate Trigger: High Mental Load
-    if (health.mentalLoad === 'HIGH' || health.mentalLoad === 'CRITICAL') {
+    if (health.mentalLoad === 'HIGH') {
         return true;
     }
 
@@ -69,11 +69,6 @@ function getHighestPriorityAction(health) {
 }
 
 /**
- * Calculates continuity state.
- * @param {boolean} appOpened - Has the app been opened?
- * @returns {string} - 'MAINTAINED' or 'PAUSED'
- */
-/**
  * Calculates Biological Debts (0-100) and Cognitive Capacity (0-100).
  * Uses Lieibig's Law of the Minimum: Capacity is limited by the scarcest resource.
  */
@@ -111,7 +106,7 @@ function calculateBiologicalMetrics(health, history = []) {
         else if (h.water === 'OK') hydrationDebt = Math.max(0, hydrationDebt - 15);
 
         // Mental Logic
-        if (h.mentalLoad === 'HIGH' || h.mentalLoad === 'CRITICAL') mentalDebt += 15;
+        if (h.mentalLoad === 'HIGH') mentalDebt += 15;
         else if (h.mentalLoad === 'LOW') mentalDebt = Math.max(0, mentalDebt - 10);
     });
 

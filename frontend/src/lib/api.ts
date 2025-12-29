@@ -364,6 +364,18 @@ export const api = {
         return authFetch(`${API_BASE_URL}/feedback/stats`, {});
     },
 
+    // Feedback: Track Outcome (Followed Advice?)
+    async trackFeedbackOutcome(feedbackId: string, data: {
+        followedAdvice: boolean;
+        capacityChange?: number;
+        notes?: string;
+    }): Promise<{ success: boolean }> {
+        return authFetch(`${API_BASE_URL}/feedback/${feedbackId}/outcome`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
     // PHASE 3: Goals
     async getGoals(): Promise<{
         targetSleepHours: number;
