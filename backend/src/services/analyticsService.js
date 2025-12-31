@@ -19,14 +19,23 @@ async function getTrendData(userId, days = 30) {
         // Convert to chart-friendly format
         const trends = history.reverse().map(log => {
             const date = new Date(log.date);
+            // Use actual hydration amount when available, fallback to status-based
+            let waterScore;
+            if (log.hydrationAmount && log.hydrationGoal) {
+                waterScore = Math.round((log.hydrationAmount / log.hydrationGoal) * 100);
+            } else {
+                waterScore = log.health?.water === 'OK' ? 100 : log.health?.water === 'LOW' ? 30 : 50;
+            }
             return {
                 date: date.toISOString().split('T')[0],
                 day: date.toLocaleDateString('en-US', { weekday: 'short' }),
                 sleep: log.health?.sleep === 'OK' ? 100 : log.health?.sleep === 'LOW' ? 30 : 50,
-                water: log.health?.water === 'OK' ? 100 : log.health?.water === 'LOW' ? 30 : 50,
+                water: waterScore,
+                hydrationMl: log.hydrationAmount || null,
+                hydrationGoal: log.hydrationGoal || null,
                 stress: log.health?.mentalLoad === 'LOW' ? 100 : log.health?.mentalLoad === 'HIGH' ? 20 : 60,
                 exercise: log.health?.exercise === 'DONE' ? 100 : 0,
-                capacity: log.aiResponse?.metrics?.capacity || 50
+                capacity: log.capacityScore || log.aiResponse?.metrics?.capacity || 50
             };
         });
 
@@ -65,15 +74,30 @@ async function getWeeklySummary(userId) {
             return { message: 'No data this week', stats: null };
         }
 
+        // Calculate average hydration rate from actual amounts
+        const logsWithHydration = logs.filter(l => l.hydrationAmount && l.hydrationGoal);
+        const avgHydrationRate = logsWithHydration.length > 0
+            ? Math.round(logsWithHydration.reduce((sum, l) => sum + (l.hydrationAmount / l.hydrationGoal) * 100, 0) / logsWithHydration.length)
+            : null;
+
+        // Count hydration issues using actual amount when available
+        const hydrationIssues = logs.filter(l => {
+            if (l.hydrationAmount && l.hydrationGoal) {
+                return l.hydrationAmount < l.hydrationGoal * 0.7; // Below 70% of goal
+            }
+            return l.health?.water === 'LOW';
+        }).length;
+
         const stats = {
             daysLogged: logs.length,
             avgCapacity: Math.round(
-                logs.reduce((a, l) => a + (l.aiResponse?.metrics?.capacity || 50), 0) / logs.length
+                logs.reduce((a, l) => a + (l.capacityScore || l.aiResponse?.metrics?.capacity || 50), 0) / logs.length
             ),
             lowSleepDays: logs.filter(l => l.health?.sleep === 'LOW').length,
             highStressDays: logs.filter(l => l.health?.mentalLoad === 'HIGH').length,
             exerciseDays: logs.filter(l => l.health?.exercise === 'DONE').length,
-            hydrationIssues: logs.filter(l => l.health?.water === 'LOW').length
+            hydrationIssues: hydrationIssues,
+            avgHydrationRate: avgHydrationRate
         };
 
         // Generate insights

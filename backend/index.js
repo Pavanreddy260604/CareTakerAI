@@ -139,6 +139,20 @@ app.get('/api/user/stats', authMiddleware, async (req, res) => {
         const userMode = user.settings?.mode || 'CARETAKER';
         const decisionObject = generateDecision(currentHealth, historyForMetrics, userMode);
 
+        // Daily hydration reset check - reset if new day since last log
+        if (user.hydration?.lastReset) {
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const lastReset = new Date(user.hydration.lastReset);
+            lastReset.setHours(0, 0, 0, 0);
+
+            if (todayStart.getTime() > lastReset.getTime()) {
+                user.hydration.currentIntake = 0;
+                user.hydration.lastReset = new Date();
+                await user.save();
+            }
+        }
+
         res.json({
             name: user.name,
             email: user.email,
@@ -319,7 +333,11 @@ app.post('/api/check-in', authMiddleware, async (req, res) => {
                 userId: userId,
                 date: new Date(),
                 health: health,
-                aiResponse: aiResult
+                aiResponse: aiResult,
+                // Store actual values for analytics
+                hydrationAmount: user.hydration?.currentIntake || 0,
+                hydrationGoal: (user.goals?.targetWaterLiters || 2) * 1000,
+                capacityScore: decisionObject.decision.capacity
             },
             { upsert: true, new: true }
         );

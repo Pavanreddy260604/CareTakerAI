@@ -26,6 +26,10 @@ const HealthLogSchema = new mongoose.Schema({
         type: Number,
         default: 1
     },
+    // Actual values for analytics (not just OK/LOW status)
+    hydrationAmount: { type: Number, default: 0 },      // ml consumed at check-in
+    hydrationGoal: { type: Number, default: 2000 },     // ml target
+    capacityScore: { type: Number, default: null },     // Capacity at check-in time
     // Focus Timer sessions
     focusSessions: [{
         duration: { type: Number, required: true }, // in seconds

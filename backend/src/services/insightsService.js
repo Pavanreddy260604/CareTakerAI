@@ -153,24 +153,42 @@ function calculateOverview(logs) {
     let waterOk = 0;
     let exerciseDone = 0;
     let highStress = 0;
+    let totalHydrationAmount = 0;
+    let totalHydrationGoal = 0;
+    let logsWithHydration = 0;
 
     logs.forEach(log => {
-        if (log.aiResponse?.metrics?.capacity) {
-            totalCapacity += log.aiResponse.metrics.capacity;
+        // Use capacityScore if available, fallback to aiResponse
+        const capacity = log.capacityScore || log.aiResponse?.metrics?.capacity;
+        if (capacity) {
+            totalCapacity += capacity;
             capacityCount++;
         }
         if (log.health?.sleep === 'OK') sleepOk++;
         if (log.health?.water === 'OK') waterOk++;
         if (log.health?.exercise === 'DONE') exerciseDone++;
         if (log.health?.mentalLoad === 'HIGH') highStress++;
+
+        // Track actual hydration amounts
+        if (log.hydrationAmount && log.hydrationGoal) {
+            totalHydrationAmount += log.hydrationAmount;
+            totalHydrationGoal += log.hydrationGoal;
+            logsWithHydration++;
+        }
     });
 
     const total = logs.length;
 
+    // Calculate hydration rate from actual amounts when available
+    const hydrationRate = logsWithHydration > 0 && totalHydrationGoal > 0
+        ? Math.round((totalHydrationAmount / totalHydrationGoal) * 100)
+        : Math.round((waterOk / total) * 100);
+
     return {
         avgCapacity: capacityCount > 0 ? Math.round(totalCapacity / capacityCount) : null,
         sleepQualityRate: Math.round((sleepOk / total) * 100),
-        hydrationRate: Math.round((waterOk / total) * 100),
+        hydrationRate: hydrationRate,
+        avgHydrationMl: logsWithHydration > 0 ? Math.round(totalHydrationAmount / logsWithHydration) : null,
         exerciseRate: Math.round((exerciseDone / total) * 100),
         stressRate: Math.round((highStress / total) * 100),
         totalCheckIns: total

@@ -259,9 +259,15 @@ function detectRecurringIssues(logs, currentHealth) {
     const last7 = logs.slice(0, 7);
     const issues = [];
 
-    // Count issues
+    // Count issues - use actual hydration amounts when available
     const lowSleepCount = last7.filter(l => l.health?.sleep === 'LOW').length;
-    const lowWaterCount = last7.filter(l => l.health?.water === 'LOW').length;
+    const lowWaterCount = last7.filter(l => {
+        // Use actual hydration amount when available
+        if (l.hydrationAmount && l.hydrationGoal) {
+            return l.hydrationAmount < l.hydrationGoal * 0.7; // Below 70% of goal
+        }
+        return l.health?.water === 'LOW';
+    }).length;
     const highStressCount = last7.filter(l => l.health?.mentalLoad === 'HIGH').length;
     const noExerciseCount = last7.filter(l => l.health?.exercise === 'PENDING').length;
 
