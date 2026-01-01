@@ -88,8 +88,12 @@ async function getWeeklySummary(userId) {
             return l.health?.water === 'LOW';
         }).length;
 
+        // Count unique days (not total logs, since user might check in multiple times per day)
+        const uniqueDays = new Set(logs.map(l => new Date(l.date).toISOString().split('T')[0]));
+
         const stats = {
-            daysLogged: logs.length,
+            daysLogged: uniqueDays.size,
+            totalCheckIns: logs.length, // Keep total for reference
             avgCapacity: Math.round(
                 logs.reduce((a, l) => a + (l.capacityScore || l.aiResponse?.metrics?.capacity || 50), 0) / logs.length
             ),
