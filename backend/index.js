@@ -289,6 +289,18 @@ app.get('/api/ai/mental-load-question', authMiddleware, async (req, res) => {
     }
 });
 
+// API Endpoint: Complete Action (mark action as done)
+app.post('/api/action/complete', authMiddleware, async (req, res) => {
+    try {
+        // Simply acknowledge the action completion
+        // In future, could track action completion history
+        res.json({ success: true, message: 'Action completed' });
+    } catch (error) {
+        console.error('Action complete error:', error);
+        res.status(500).json({ error: 'Failed to complete action' });
+    }
+});
+
 // API Endpoint: Analyze Mental Load Answer
 app.post('/api/ai/mental-load-analysis', authMiddleware, async (req, res) => {
     try {
