@@ -13,8 +13,10 @@ import {
     Minus,
     AlertTriangle,
     Sparkles,
-    Droplets
+    Droplets,
+    HelpCircle
 } from 'lucide-react';
+import { CapacityExplainer } from './CapacityExplainer';
 
 interface AnalyticsData {
     trends: Array<{
@@ -61,6 +63,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
         trend?: 'improving' | 'stable' | 'declining';
         aiAnalysis?: string;
     } | null>(null);
+    const [showCapacityExplainer, setShowCapacityExplainer] = useState(false);
 
     useEffect(() => {
         const fetchAnalytics = async () => {
@@ -157,12 +160,15 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                     {data?.summary && (
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                             <StatCard label="Total Days" value={data.summary.totalDays} icon={Calendar} />
-                            <StatCard
-                                label="30-Day Avg"
-                                value={`${data.summary.avgCapacity}%`}
-                                icon={Battery}
-                                color={data.summary.avgCapacity >= 70 ? 'text-emerald-500' : 'text-amber-500'}
-                            />
+                            <div onClick={() => setShowCapacityExplainer(true)} className="cursor-pointer group relative">
+                                <StatCard
+                                    label="30-Day Avg"
+                                    value={`${data.summary.avgCapacity}%`}
+                                    icon={Battery}
+                                    color={data.summary.avgCapacity >= 70 ? 'text-emerald-500' : 'text-amber-500'}
+                                />
+                                <HelpCircle className="absolute top-2 right-2 w-4 h-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                            </div>
                             <StatCard label="Sleep Issues" value={data.summary.lowSleepDays} icon={Moon} color="text-rose-500" />
                             <StatCard label="High Stress" value={data.summary.highStressDays} icon={Brain} color="text-amber-500" />
                             <StatCard label="Workouts" value={data.summary.exerciseDays} icon={Activity} color="text-emerald-500" />
@@ -420,6 +426,13 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
 
                 </div>
             </div>
+
+            {/* Capacity Explainer Modal */}
+            <CapacityExplainer
+                isOpen={showCapacityExplainer}
+                onClose={() => setShowCapacityExplainer(false)}
+                currentCapacity={data?.summary?.avgCapacity}
+            />
         </div >
     );
 }
