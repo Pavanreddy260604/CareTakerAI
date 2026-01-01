@@ -260,8 +260,8 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                             <span className="text-xl font-bold text-foreground">{data.weekly.stats.avgCapacity}%</span>
                                         </div>
                                         <div className="flex justify-between items-center p-3 bg-muted/20 rounded-xl">
-                                            <span className="text-muted-foreground">Days Logged</span>
-                                            <span className="text-xl font-bold text-foreground">{data.weekly.stats.daysLogged}/7</span>
+                                            <span className="text-muted-foreground">Check-ins This Week</span>
+                                            <span className="text-xl font-bold text-foreground">{data.weekly.stats.daysLogged}</span>
                                         </div>
                                         <div className="flex justify-between items-center p-3 bg-muted/10 rounded-xl">
                                             <span className="text-muted-foreground">Hydration Issues</span>
@@ -308,22 +308,26 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                             ) : weeklyInsights ? (
                                 <>
                                     <div className="bento-grid !p-0 !pb-0 md:!grid-cols-3">
-                                        {/* Overview */}
-                                        <div className="bento-card p-6 flex flex-col items-center justify-center text-center bg-card border-border">
-                                            <Brain className="w-10 h-10 mb-2 text-primary" />
-                                            <span className="text-2xl font-bold text-gradient-teal">{weeklyInsights.overview?.avgCapacity || 0}%</span>
-                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Weekly Capacity</span>
-                                            <span className="text-[10px] text-muted-foreground mt-1">Your cognitive energy level</span>
-                                        </div>
+                                        {/* Sleep Quality */}
                                         <div className="bento-card p-6 flex flex-col items-center justify-center text-center bg-card border-border">
                                             <Moon className="w-10 h-10 mb-2 text-primary" />
                                             <span className="text-2xl font-bold text-foreground">{weeklyInsights.overview?.sleepQualityRate || 0}%</span>
-                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Sleep Quality</span>
+                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Good Sleep Days</span>
+                                            <span className="text-[10px] text-muted-foreground mt-1">Days with quality rest</span>
                                         </div>
+                                        {/* Hydration */}
                                         <div className="bento-card p-6 flex flex-col items-center justify-center text-center bg-card border-border">
-                                            <Activity className="w-10 h-10 mb-2 text-amber-500" />
-                                            <span className="text-2xl font-bold text-amber-500">{weeklyInsights.overview?.stressRate || 0}%</span>
-                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Stress Rate</span>
+                                            <Droplets className="w-10 h-10 mb-2 text-cyan-500" />
+                                            <span className="text-2xl font-bold text-cyan-500">{weeklyInsights.overview?.hydrationRate || 0}%</span>
+                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Hydration Score</span>
+                                            <span className="text-[10px] text-muted-foreground mt-1">Days you hit water goal</span>
+                                        </div>
+                                        {/* Exercise */}
+                                        <div className="bento-card p-6 flex flex-col items-center justify-center text-center bg-card border-border">
+                                            <Activity className="w-10 h-10 mb-2 text-emerald-500" />
+                                            <span className="text-2xl font-bold text-emerald-500">{weeklyInsights.overview?.exerciseRate || 0}%</span>
+                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Active Days</span>
+                                            <span className="text-[10px] text-muted-foreground mt-1">Days you exercised</span>
                                         </div>
                                     </div>
 
