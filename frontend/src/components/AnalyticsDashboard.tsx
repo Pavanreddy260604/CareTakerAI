@@ -158,7 +158,7 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                             <StatCard label="Total Days" value={data.summary.totalDays} icon={Calendar} />
                             <StatCard
-                                label="Avg Capacity"
+                                label="30-Day Avg"
                                 value={`${data.summary.avgCapacity}%`}
                                 icon={Battery}
                                 color={data.summary.avgCapacity >= 70 ? 'text-emerald-500' : 'text-amber-500'}
@@ -172,6 +172,13 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                     {/* Trends Tab */}
                     {activeTab === 'trends' && (
                         <>
+                            {/* Info Banner */}
+                            <div className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                                <p className="text-sm text-foreground/80">
+                                    <span className="font-semibold text-primary">📊 30-Day Overview</span> — Your capacity trend over the last month.
+                                    Capacity = your cognitive energy (100% = fully charged, below 45% = recovery needed).
+                                </p>
+                            </div>
                             <div className="glass-card p-6 bg-card border-border">
                                 <h3 className="text-lg font-display font-medium mb-6 text-foreground">Capacity Trend (30 Days)</h3>
 
@@ -216,8 +223,8 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                             <Sparkles className="w-3 h-3" /> AI POWERED
                                         </span>
                                         <div className={`px-2 py-0.5 text-[10px] font-bold rounded-full flex items-center gap-1 ${aiTrendAnalysis.trend === 'improving' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
-                                                aiTrendAnalysis.trend === 'declining' ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400' :
-                                                    'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                            aiTrendAnalysis.trend === 'declining' ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400' :
+                                                'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                             }`}>
                                             {aiTrendAnalysis.trend === 'improving' ? <TrendingUp className="w-3 h-3" /> :
                                                 aiTrendAnalysis.trend === 'declining' ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
@@ -236,47 +243,63 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
 
                     {/* Weekly Tab */}
                     {activeTab === 'weekly' && data?.weekly?.stats && (
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div className="glass-card p-6 bg-card border-border">
-                                <h3 className="text-lg font-display font-medium mb-4 text-foreground">Weekly Performance</h3>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center p-3 bg-muted/20 rounded-xl">
-                                        <span className="text-muted-foreground">Avg Capacity</span>
-                                        <span className="text-xl font-bold text-foreground">{data.weekly.stats.avgCapacity}%</span>
-                                    </div>
-                                    <div className="flex justify-between items-center p-3 bg-muted/20 rounded-xl">
-                                        <span className="text-muted-foreground">Days Logged</span>
-                                        <span className="text-xl font-bold text-foreground">{data.weekly.stats.daysLogged}/7</span>
-                                    </div>
-                                    <div className="flex justify-between items-center p-3 bg-muted/10 rounded-xl">
-                                        <span className="text-muted-foreground">Hydration Issues</span>
-                                        <span className="text-xl font-bold text-rose-500">{data.weekly.stats.hydrationIssues}</span>
-                                    </div>
-                                </div>
+                        <>
+                            {/* Info Banner */}
+                            <div className="mb-6 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                                <p className="text-sm text-foreground/80">
+                                    <span className="font-semibold text-amber-600 dark:text-amber-400">📅 This Week Only</span> — Performance from the last 7 days.
+                                    Compare with your 30-day average in the Trends tab.
+                                </p>
                             </div>
-
-                            <div className="glass-card p-6 bg-card border-border">
-                                <h3 className="text-lg font-display font-medium mb-4 text-foreground">Key Insights</h3>
-                                <div className="space-y-3">
-                                    {data.weekly.insights?.map((insight, idx) => (
-                                        <div key={idx} className={`p-4 rounded-xl border ${insight.type === 'positive' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-amber-500/20 bg-amber-500/5'
-                                            }`}>
-                                            <p className="text-sm font-medium leading-relaxed opacity-90 text-foreground">
-                                                {insight.text}
-                                            </p>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="glass-card p-6 bg-card border-border">
+                                    <h3 className="text-lg font-display font-medium mb-4 text-foreground">Weekly Performance</h3>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center p-3 bg-muted/20 rounded-xl">
+                                            <span className="text-muted-foreground">This Week Avg</span>
+                                            <span className="text-xl font-bold text-foreground">{data.weekly.stats.avgCapacity}%</span>
                                         </div>
-                                    ))}
-                                    {(!data.weekly.insights || data.weekly.insights.length === 0) && (
-                                        <p className="text-muted-foreground">No significant insights for this week yet.</p>
-                                    )}
+                                        <div className="flex justify-between items-center p-3 bg-muted/20 rounded-xl">
+                                            <span className="text-muted-foreground">Days Logged</span>
+                                            <span className="text-xl font-bold text-foreground">{data.weekly.stats.daysLogged}/7</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-muted/10 rounded-xl">
+                                            <span className="text-muted-foreground">Hydration Issues</span>
+                                            <span className="text-xl font-bold text-rose-500">{data.weekly.stats.hydrationIssues}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="glass-card p-6 bg-card border-border">
+                                    <h3 className="text-lg font-display font-medium mb-4 text-foreground">Key Insights</h3>
+                                    <div className="space-y-3">
+                                        {data.weekly.insights?.map((insight, idx) => (
+                                            <div key={idx} className={`p-4 rounded-xl border ${insight.type === 'positive' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-amber-500/20 bg-amber-500/5'
+                                                }`}>
+                                                <p className="text-sm font-medium leading-relaxed opacity-90 text-foreground">
+                                                    {insight.text}
+                                                </p>
+                                            </div>
+                                        ))}
+                                        {(!data.weekly.insights || data.weekly.insights.length === 0) && (
+                                            <p className="text-muted-foreground">No significant insights for this week yet.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </>
                     )}
 
                     {/* AI Insights Tab */}
                     {activeTab === 'insights' && (
                         <div className="space-y-6">
+                            {/* Info Banner */}
+                            <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
+                                <p className="text-sm text-foreground/80">
+                                    <span className="font-semibold text-cyan-600 dark:text-cyan-400">🤖 AI Analysis (7 Days)</span> — Personalized insights from your weekly data.
+                                    Recommendations based on patterns detected in your check-ins.
+                                </p>
+                            </div>
                             {insightsLoading ? (
                                 <div className="flex flex-col items-center justify-center py-12">
                                     <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
@@ -289,7 +312,8 @@ export function AnalyticsDashboard({ onClose }: AnalyticsDashboardProps) {
                                         <div className="bento-card p-6 flex flex-col items-center justify-center text-center bg-card border-border">
                                             <Brain className="w-10 h-10 mb-2 text-primary" />
                                             <span className="text-2xl font-bold text-gradient-teal">{weeklyInsights.overview?.avgCapacity || 0}%</span>
-                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Avg Capacity</span>
+                                            <span className="text-xs uppercase tracking-widest text-muted-foreground">Weekly Capacity</span>
+                                            <span className="text-[10px] text-muted-foreground mt-1">Your cognitive energy level</span>
                                         </div>
                                         <div className="bento-card p-6 flex flex-col items-center justify-center text-center bg-card border-border">
                                             <Moon className="w-10 h-10 mb-2 text-primary" />
