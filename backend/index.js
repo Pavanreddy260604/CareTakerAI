@@ -140,10 +140,20 @@ app.get('/api/user/stats', authMiddleware, async (req, res) => {
         const decisionObject = generateDecision(currentHealth, historyForMetrics, userMode);
 
         // Daily hydration reset check - reset if new day since last log
-        if (user.hydration?.lastReset) {
+        // Initialize hydration object if it doesn't exist
+        if (!user.hydration) {
+            user.hydration = {
+                remindersEnabled: false,
+                reminderInterval: 60,
+                incrementAmount: 250,
+                currentIntake: 0,
+                lastReset: new Date()
+            };
+            await user.save();
+        } else {
             const todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
-            const lastReset = new Date(user.hydration.lastReset);
+            const lastReset = new Date(user.hydration.lastReset || user.createdAt);
             lastReset.setHours(0, 0, 0, 0);
 
             if (todayStart.getTime() > lastReset.getTime()) {
